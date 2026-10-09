@@ -24,8 +24,8 @@ use Throwable;
  * Everything the AI part registers: bindings, the event listeners, its commands. The service provider calls these two
  * methods and nothing else of the AI part, so the AI part owns its wiring.
  *
- * Config keys read, all with defaults in code: `sidetower.ai.http` (true), `sidetower.ai.hosts` ([]) and
- * `sidetower.ai.history_sources` ([]).
+ * Config keys read, all with defaults in code: `sidetower.ai.http` (true), `sidetower.ai.hosts` ([]),
+ * `sidetower.ai.streams` (true) and `sidetower.ai.history_sources` ([]).
  */
 class AiServices
 {

@@ -11,6 +11,7 @@ use Illuminate\Http\Client\Request;
 use Illuminate\Http\Client\Response;
 use Sidetower\Laravel\Ai\AiUsage;
 use Sidetower\Laravel\Ai\Debug;
+use Sidetower\Laravel\Ai\Setting;
 use Sidetower\Laravel\Sidetower;
 use Throwable;
 
@@ -43,7 +44,7 @@ class HttpCapture
     protected function capture(Request $request, ?Response $response, ?ConnectionException $exception): void
     {
         try {
-            if (! filter_var(config('sidetower.ai.http', true) ?? true, FILTER_VALIDATE_BOOLEAN)) {
+            if (! Setting::enabled('http')) {
                 return;
             }
 

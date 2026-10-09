@@ -294,3 +294,30 @@ it('matches a wildcard host', function () {
 
     expect(AiTestHelpers::only())->toMatchArray(['provider' => 'azure', 'model' => 'gpt-4o']);
 });
+
+it('leaves out calls with a stream it cannot read when ai.streams is off', function () {
+    config()->set('sidetower.ai.streams', false);
+    $touched = false;
+    Http::fake(['api.openai.com/*' => Http::response(liveStream($touched), 200, ['Content-Type' => 'text/event-stream'])]);
+
+    Http::post('https://api.openai.com/v1/chat/completions', ['model' => 'gpt-4o-mini', 'stream' => true]);
+
+    expect($touched)->toBeFalse()
+        ->and(AiTestHelpers::items())->toBe([]);
+});
+
+it('still records buffered streams and failures when ai.streams is off', function () {
+    config()->set('sidetower.ai.streams', false);
+    $body = 'data: '.json_encode(['model' => 'gpt-4o-mini', 'choices' => [], 'usage' => ['prompt_tokens' => 5, 'completion_tokens' => 6]])."\n\ndata: [DONE]\n\n";
+    Http::fake([
+        'api.openai.com/*' => Http::sequence()
+            ->push($body, 200, ['Content-Type' => 'text/event-stream'])
+            ->push(['error' => ['message' => 'x']], 500),
+    ]);
+
+    Http::post('https://api.openai.com/v1/chat/completions', ['model' => 'gpt-4o-mini']);
+    Http::post('https://api.openai.com/v1/chat/completions', ['model' => 'gpt-4o-mini']);
+
+    expect(array_column(AiTestHelpers::items(), 'status'))->toBe(['ok', 'error'])
+        ->and(AiTestHelpers::items()[0])->toMatchArray(['inputTokens' => 5, 'outputTokens' => 6]);
+});

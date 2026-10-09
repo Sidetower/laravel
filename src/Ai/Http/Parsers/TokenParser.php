@@ -7,6 +7,7 @@ namespace Sidetower\Laravel\Ai\Http\Parsers;
 use Illuminate\Support\Arr;
 use Sidetower\Laravel\Ai\Http\BodyState;
 use Sidetower\Laravel\Ai\Http\HttpExchange;
+use Sidetower\Laravel\Ai\Setting;
 
 /**
  * The shared flow of the providers that bill by tokens and answer with JSON (or a buffered event stream) carrying a usage
@@ -14,6 +15,7 @@ use Sidetower\Laravel\Ai\Http\HttpExchange;
  *
  *  - not 2xx, or the connection failed: `error`, no tokens;
  *  - 2xx with a live stream or a body too large to look at: `ok`, no tokens (the call happened, its usage is out of sight);
+ *    unless `sidetower.ai.streams` is off, for applications that record streamed usage themselves: then nothing;
  *  - 2xx with a buffered event stream: `ok`, with the last usage the stream carried if it carried one;
  *  - 2xx, readable, but not JSON or without the expected usage: `invalid_response`.
  *
@@ -55,7 +57,7 @@ abstract class TokenParser implements ProviderParser
         $body = $call->body();
 
         if ($body->state === BodyState::Unreadable) {
-            return [...$fields, 'model' => $this->model([], $call), 'status' => 'ok'];
+            return Setting::enabled('streams') ? [...$fields, 'model' => $this->model([], $call), 'status' => 'ok'] : null;
         }
 
         $usage = $body->state === BodyState::Invalid ? null : $this->usage($body->payloads, $call);
