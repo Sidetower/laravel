@@ -65,6 +65,10 @@ class Sidetower
      */
     public function offBecause(): ?string
     {
+        if ($this->redirect !== null) {
+            return $this->redirect->offBecause();
+        }
+
         $enabled = config('sidetower.enabled');
 
         if ($enabled !== null && ! filter_var($enabled, FILTER_VALIDATE_BOOLEAN)) {
