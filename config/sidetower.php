@@ -102,6 +102,26 @@ return [
         | responses themselves are never sent.
         */
         'http' => true,
+
+        /*
+        | Extra hosts read as AI providers, host => provider name. A provider
+        | without a parser of its own is read as OpenAI-compatible.
+        | '*.example.com' matches every subdomain; null removes a default host.
+        | Example: ['llm.internal.example.com' => 'openai']
+        */
+        'hosts' => [],
+
+        /*
+        | Streamed calls are recorded without tokens. Switch off when the
+        | application records streamed usage itself (docs/ai.md).
+        */
+        'streams' => true,
+
+        /*
+        | Classes implementing Sidetower\Laravel\Import\HistorySource, read once
+        | by `php artisan sidetower:import-history`.
+        */
+        'history_sources' => [],
     ],
 
 ];

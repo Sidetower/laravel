@@ -213,7 +213,7 @@ describe('the monitor name', function () {
 });
 
 describe('the expected interval', function () {
-    it('is the time between the next two runs of the cron expression', function (string $method, array $arguments, int $seconds) {
+    it('is the time from the run going on to the next one', function (string $method, array $arguments, int $seconds) {
         $task = sdkEmptySchedule()->call(fn () => null)->name('t')->{$method}(...$arguments);
 
         expect(app(TaskCheckins::class)->intervalFor($task))->toBe($seconds);
@@ -226,9 +226,23 @@ describe('the expected interval', function () {
         'daily at' => ['dailyAt', ['03:30'], 86400],
         'twice daily' => ['twiceDaily', [1, 13], 43200],
         'weekly' => ['weekly', [], 604800],
-        'monthly (October 9: November 1 to December 1)' => ['monthly', [], 30 * 86400],
+        'monthly (October 9: October 1 to November 1)' => ['monthly', [], 31 * 86400],
         'custom cron' => ['cron', ['*/10 * * * *'], 600],
     ]);
+
+    it('spans the weekend for a weekday task on a Friday', function () {
+        Carbon::setTestNow('2026-10-09T09:00:20Z');
+        $task = sdkEmptySchedule()->call(fn () => null)->name('t')->weekdays()->dailyAt('09:00');
+
+        expect(app(TaskCheckins::class)->intervalFor($task))->toBe(3 * 86400);
+    });
+
+    it('reads the expression in the task timezone', function () {
+        Carbon::setTestNow('2026-10-09T06:00:20Z');
+        $task = sdkEmptySchedule()->call(fn () => null)->name('t')->weekdays()->dailyAt('09:00')->timezone('Europe/Istanbul');
+
+        expect(app(TaskCheckins::class)->intervalFor($task))->toBe(3 * 86400);
+    });
 
     it('is never below 60 seconds', function () {
         $task = sdkEmptySchedule()->call(fn () => null)->name('t')->everySecond();

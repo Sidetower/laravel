@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Sidetower\Laravel\Scheduling;
 
+use Cron\CronExpression;
+use DateTimeZone;
 use Illuminate\Console\Events\ScheduledBackgroundTaskFinished;
 use Illuminate\Console\Events\ScheduledTaskFailed;
 use Illuminate\Console\Events\ScheduledTaskFinished;
@@ -125,13 +127,18 @@ class TaskCheckins
     }
 
     /**
-     * Seconds between the next two runs of the task, from its cron expression; null if the expression cannot be read.
+     * Seconds from the run that is going on (the latest one due, this minute included) to the next one, from the task's cron
+     * expression and timezone: how long the panel waits for the next check-in. A weekday task reports three days on a Friday.
+     * Null if the expression cannot be read.
      */
     public function intervalFor(Event $task): ?int
     {
         try {
+            $cron = new CronExpression($task->getExpression());
+            $timezone = $task->timezone instanceof DateTimeZone ? $task->timezone->getName() : $task->timezone;
             $now = Carbon::now();
-            $seconds = $task->nextRunDate($now, 1)->getTimestamp() - $task->nextRunDate($now)->getTimestamp();
+            $seconds = $cron->getNextRunDate($now, 0, false, $timezone)->getTimestamp()
+                - $cron->getPreviousRunDate($now, 0, true, $timezone)->getTimestamp();
         } catch (Throwable) {
             return null;
         }
