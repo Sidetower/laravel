@@ -15,7 +15,8 @@ use Sidetower\Laravel\Ai\Setting;
  *
  *  - not 2xx, or the connection failed: `error`, no tokens;
  *  - 2xx with a live stream or a body too large to look at: `ok`, no tokens (the call happened, its usage is out of sight);
- *    unless `sidetower.ai.streams` is off, for applications that record streamed usage themselves: then nothing;
+ *    unless `sidetower.ai.streams` is off, for applications that record streamed usage themselves: then nothing. The
+ *    transfer statistics of a live stream only cover the wait for its first bytes, so no duration is recorded;
  *  - 2xx with a buffered event stream: `ok`, with the last usage the stream carried if it carried one;
  *  - 2xx, readable, but not JSON or without the expected usage: `invalid_response`.
  *
@@ -57,7 +58,7 @@ abstract class TokenParser implements ProviderParser
         $body = $call->body();
 
         if ($body->state === BodyState::Unreadable) {
-            return Setting::enabled('streams') ? [...$fields, 'model' => $this->model([], $call), 'status' => 'ok'] : null;
+            return Setting::enabled('streams') ? ['provider' => $call->provider, 'model' => $this->model([], $call), 'status' => 'ok'] : null;
         }
 
         $usage = $body->state === BodyState::Invalid ? null : $this->usage($body->payloads, $call);

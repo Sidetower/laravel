@@ -54,6 +54,18 @@ it('records a streamed response without touching its body', function (string $co
         ->and($touched)->toBeTrue();
 })->with(['event stream' => ['text/event-stream'], 'json' => ['application/json'], 'no type' => ['']]);
 
+it('records no duration for a live stream, whose transfer statistics only cover the wait for its first bytes', function () {
+    $touched = false;
+    $request = new PsrRequest('POST', 'https://api.openai.com/v1/chat/completions');
+    $response = new Response(new PsrResponse(200, ['Content-Type' => 'text/event-stream'], liveStream($touched)));
+    $response->transferStats = new TransferStats($request, null, 0.001);
+
+    $fields = app(ProviderRegistry::class)->parserFor('openai')->parse(new HttpExchange('openai', new Request($request), $response));
+
+    expect($fields)->toBe(['provider' => 'openai', 'model' => 'unknown', 'status' => 'ok'])
+        ->and($touched)->toBeFalse();
+});
+
 it('does not touch the body of a streamed error response either', function () {
     $touched = false;
     Http::fake(['api.anthropic.com/*' => Http::response(liveStream($touched), 529, ['Content-Type' => 'application/json'])]);

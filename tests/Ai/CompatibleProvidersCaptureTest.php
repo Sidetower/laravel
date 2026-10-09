@@ -216,3 +216,35 @@ it('records a buffered event stream that carries no usage as ok without tokens',
         'type' => 'ai.usage', 'operation' => 'unknown', 'provider' => 'openai', 'model' => 'gpt-4o-mini', 'status' => 'ok',
     ]);
 });
+
+it('records an error response of every OpenAI-compatible provider as an error with the requested model', function (string $url, string $provider, string $model) {
+    Http::fake(['*' => Http::response(['error' => ['message' => 'Rate limit exceeded', 'type' => 'rate_limit_error', 'code' => 429]], 429, ['Retry-After' => '3'])]);
+
+    Http::post($url, ['model' => $model, 'messages' => []]);
+
+    expect(AiTestHelpers::only())->toBe([
+        'type' => 'ai.usage', 'operation' => 'unknown', 'provider' => $provider, 'model' => $model, 'status' => 'error',
+    ]);
+})->with([
+    'openrouter' => ['https://openrouter.ai/api/v1/chat/completions', 'openrouter', 'google/gemini-2.5-flash'],
+    'mistral' => ['https://api.mistral.ai/v1/chat/completions', 'mistral', 'mistral-small-latest'],
+    'groq' => ['https://api.groq.com/openai/v1/chat/completions', 'groq', 'llama-3.3-70b-versatile'],
+    'deepseek' => ['https://api.deepseek.com/chat/completions', 'deepseek', 'deepseek-chat'],
+    'xai' => ['https://api.x.ai/v1/chat/completions', 'xai', 'grok-4'],
+]);
+
+it('records a malformed 2xx of every OpenAI-compatible provider as an invalid response', function (string $url, string $provider, string $model) {
+    Http::fake(['*' => Http::response('{"id":"x","choices":[{"mess', 200, ['Content-Type' => 'application/json'])]);
+
+    Http::post($url, ['model' => $model, 'messages' => []]);
+
+    expect(AiTestHelpers::only())->toBe([
+        'type' => 'ai.usage', 'operation' => 'unknown', 'provider' => $provider, 'model' => $model, 'status' => 'invalid_response',
+    ]);
+})->with([
+    'openrouter' => ['https://openrouter.ai/api/v1/chat/completions', 'openrouter', 'google/gemini-2.5-flash'],
+    'mistral' => ['https://api.mistral.ai/v1/chat/completions', 'mistral', 'mistral-small-latest'],
+    'groq' => ['https://api.groq.com/openai/v1/chat/completions', 'groq', 'llama-3.3-70b-versatile'],
+    'deepseek' => ['https://api.deepseek.com/chat/completions', 'deepseek', 'deepseek-chat'],
+    'xai' => ['https://api.x.ai/v1/chat/completions', 'xai', 'grok-4'],
+]);
