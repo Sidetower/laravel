@@ -190,7 +190,10 @@ class Sender
         $this->sidetower->log('warning', "Sidetower dropped {$count} item(s): the server answered {$answer}. ".$this->hint($delivery));
     }
 
-    protected function hint(Delivery $delivery): string
+    /**
+     * What to check after a refusal, for the log and for `sidetower:test`.
+     */
+    public function hint(Delivery $delivery): string
     {
         return match ($delivery->error) {
             'invalid_key' => 'Check SIDETOWER_KEY.',

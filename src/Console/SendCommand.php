@@ -20,8 +20,8 @@ class SendCommand extends Command
      */
     public function handle(Sidetower $sidetower, Sender $sender): int
     {
-        if (! $sidetower->enabled()) {
-            $this->components->info('Sidetower is off: it needs SIDETOWER_KEY and SIDETOWER_ENDPOINT, and is off in tests unless SIDETOWER_ENABLED=true.');
+        if (($reason = $sidetower->offBecause()) !== null) {
+            $this->components->info("Sidetower is off: {$reason}.");
 
             return self::SUCCESS;
         }

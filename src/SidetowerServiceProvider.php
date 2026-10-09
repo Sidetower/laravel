@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Sidetower\Laravel\Ai\AiServices;
 use Sidetower\Laravel\Console\SendCommand;
+use Sidetower\Laravel\Console\TestCommand;
 use Sidetower\Laravel\Health\HealthReport;
 use Sidetower\Laravel\Scheduling\TaskCheckins;
 
@@ -47,7 +48,7 @@ class SidetowerServiceProvider extends ServiceProvider
                 __DIR__.'/../config/sidetower.php' => config_path('sidetower.php'),
             ], 'sidetower-config');
 
-            $this->commands([SendCommand::class]);
+            $this->commands([SendCommand::class, TestCommand::class]);
             $this->commands(AiServices::commands());
         }
 

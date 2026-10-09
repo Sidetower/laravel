@@ -42,29 +42,52 @@ class Sidetower
 
     protected bool $warnedAboutEnvironment = false;
 
+    /** While `Sidetower::fake()` is in use: the fake that records instead of this manager. */
+    protected ?Sidetower $redirect = null;
+
     public function __construct(protected Application $app) {}
 
     /**
-     * Off without a key and an endpoint, when switched off, and while the application runs its tests (unless switched on
-     * explicitly).
+     * Off without a key and an endpoint, when switched off, with an environment the protocol does not know, and while the
+     * application runs its tests (unless switched on explicitly).
      */
     public function enabled(): bool
+    {
+        if ($this->redirect !== null) {
+            return $this->redirect->enabled();
+        }
+
+        return $this->offBecause() === null;
+    }
+
+    /**
+     * Why the SDK is off, in a sentence for a person; null when it is on.
+     */
+    public function offBecause(): ?string
     {
         $enabled = config('sidetower.enabled');
 
         if ($enabled !== null && ! filter_var($enabled, FILTER_VALIDATE_BOOLEAN)) {
-            return false;
+            return 'it is switched off (SIDETOWER_ENABLED=false)';
         }
 
         if ($enabled === null && $this->app->runningUnitTests()) {
-            return false;
+            return 'the application is running its tests; set SIDETOWER_ENABLED=true to switch it on';
         }
 
-        if (blank(config('sidetower.key')) || blank(config('sidetower.endpoint'))) {
-            return false;
+        if (blank(config('sidetower.key'))) {
+            return 'SIDETOWER_KEY is not set';
         }
 
-        return $this->environment() !== null;
+        if (blank(config('sidetower.endpoint'))) {
+            return 'SIDETOWER_ENDPOINT is not set';
+        }
+
+        if ($this->environment() === null) {
+            return 'the environment is not one the protocol accepts (^[a-z][a-z0-9-]{0,19}$); set SIDETOWER_ENVIRONMENT';
+        }
+
+        return null;
     }
 
     /**
@@ -97,6 +120,12 @@ class Sidetower
      */
     public function record(array $item): void
     {
+        if ($this->redirect !== null) {
+            $this->redirect->record($item);
+
+            return;
+        }
+
         try {
             if (! $this->enabled()) {
                 return;
@@ -122,7 +151,7 @@ class Sidetower
      */
     public function pending(): array
     {
-        return $this->pending;
+        return $this->redirect?->pending() ?? $this->pending;
     }
 
     /**
@@ -131,6 +160,12 @@ class Sidetower
      */
     public function persist(): void
     {
+        if ($this->redirect !== null) {
+            $this->redirect->persist();
+
+            return;
+        }
+
         if ($this->pending === []) {
             return;
         }
@@ -145,6 +180,16 @@ class Sidetower
             $this->capPending();
             $this->log('debug', 'Sidetower could not write its buffer: '.$exception->getMessage());
         }
+    }
+
+    /**
+     * Sends everything that is recorded from now on to this fake, also from objects that already hold this manager.
+     *
+     * @internal Use {@see Facades\Sidetower::fake()}.
+     */
+    public function redirectTo(?Sidetower $fake): void
+    {
+        $this->redirect = $fake;
     }
 
     public function ai(): AiUsage
