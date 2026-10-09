@@ -1,0 +1,26 @@
+{
+  "description": "The smallest valid request: a publishable key and one event, no source, no sentAt.",
+  "key": {
+    "kind": "publishable",
+    "environment": "production"
+  },
+  "request": {
+    "protocol": 1,
+    "sdk": {
+      "name": "js",
+      "version": "0.1.0"
+    },
+    "items": [
+      {
+        "type": "event",
+        "id": "ev-0001",
+        "ts": "2026-10-09T17:59:30Z",
+        "name": "paywall_viewed"
+      }
+    ]
+  },
+  "expect": {
+    "accepted": 1,
+    "rejected": []
+  }
+}

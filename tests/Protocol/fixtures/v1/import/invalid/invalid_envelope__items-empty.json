@@ -1,0 +1,19 @@
+{
+  "description": "An import request needs 1 to 500 items, like an ingest request.",
+  "key": {
+    "kind": "secret",
+    "environment": "production"
+  },
+  "request": {
+    "protocol": 1,
+    "sdk": {
+      "name": "laravel",
+      "version": "0.1.0"
+    },
+    "sentAt": "2026-10-09T18:00:00Z",
+    "items": []
+  },
+  "expect": {
+    "error": "invalid_envelope"
+  }
+}

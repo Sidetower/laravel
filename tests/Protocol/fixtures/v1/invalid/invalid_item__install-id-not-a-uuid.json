@@ -1,0 +1,34 @@
+{
+  "description": "installId is a UUID.",
+  "key": {
+    "kind": "publishable",
+    "environment": "production"
+  },
+  "request": {
+    "protocol": 1,
+    "sdk": {
+      "name": "laravel",
+      "version": "0.1.0"
+    },
+    "sentAt": "2026-10-09T18:00:00Z",
+    "items": [
+      {
+        "type": "install.active",
+        "id": "ia-0087",
+        "ts": "2026-10-09T17:59:30Z",
+        "installId": "device-1234",
+        "version": "1.4.0",
+        "platform": "ios"
+      }
+    ]
+  },
+  "expect": {
+    "accepted": 0,
+    "rejected": [
+      {
+        "index": 0,
+        "error": "invalid_item"
+      }
+    ]
+  }
+}

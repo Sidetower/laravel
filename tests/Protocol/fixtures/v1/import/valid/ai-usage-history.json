@@ -1,0 +1,96 @@
+{
+  "description": "History of AI calls as an app's own cost table gives it: stable ids (hist-<source>-<table>-<row id>), months old, the cost the app recorded as reportedCostUsd, attributes.imported set, one row that has only a cost.",
+  "key": {
+    "kind": "secret",
+    "environment": "production"
+  },
+  "request": {
+    "protocol": 1,
+    "sdk": {
+      "name": "laravel",
+      "version": "0.1.0"
+    },
+    "sentAt": "2026-10-09T18:00:00Z",
+    "items": [
+      {
+        "type": "ai.usage",
+        "id": "hist-lume-ai_content_generations-1842",
+        "ts": "2026-06-11T09:14:05Z",
+        "operation": "story.generate",
+        "provider": "openrouter",
+        "model": "google/gemini-2.5-flash",
+        "status": "ok",
+        "inputTokens": 1850,
+        "outputTokens": 2210,
+        "reportedCostUsd": 0.00312,
+        "attributes": {
+          "imported": true,
+          "variant": "b"
+        }
+      },
+      {
+        "type": "ai.usage",
+        "id": "hist-lume-a_i_image_generations-377",
+        "ts": "2025-09-05T18:00:00Z",
+        "operation": "cover.generate",
+        "provider": "fal",
+        "model": "fal-ai/flux/schnell",
+        "status": "ok",
+        "units": 1,
+        "unitType": "image",
+        "reportedCostUsd": 0.003,
+        "attributes": {
+          "imported": true
+        }
+      },
+      {
+        "type": "ai.usage",
+        "id": "hist-lume-a_i_voice_syntheses-90",
+        "ts": "2026-01-20T21:40:00+03:00",
+        "operation": "narrator.speech",
+        "provider": "elevenlabs",
+        "model": "eleven_multilingual_v2",
+        "status": "ok",
+        "units": 1423,
+        "unitType": "character",
+        "attributes": {
+          "imported": true
+        }
+      },
+      {
+        "type": "ai.usage",
+        "id": "hist-penguess-ai_usage_events-5521",
+        "ts": "2026-03-02T07:30:12.250Z",
+        "operation": "story.generate",
+        "provider": "openrouter",
+        "model": "google/gemini-2.5-flash",
+        "status": "error",
+        "durationMs": 30000,
+        "attributes": {
+          "imported": true,
+          "attempt": 2
+        }
+      },
+      {
+        "type": "ai.usage",
+        "id": "hist-yulaf-ai_generation_logs-12",
+        "ts": "2026-04-18T12:00:00Z",
+        "operation": "story.generate",
+        "provider": "openai",
+        "model": "gpt-4o-mini-2024-07-18",
+        "status": "ok",
+        "inputTokens": 900,
+        "outputTokens": 310,
+        "cacheReadTokens": 640,
+        "reportedCostUsd": 0,
+        "attributes": {
+          "imported": true
+        }
+      }
+    ]
+  },
+  "expect": {
+    "accepted": 5,
+    "rejected": []
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "description": "Timestamps exactly 1 hour ahead of the server clock and exactly 7 days behind it are still accepted (the fixtures are checked at 2026-10-09T18:00:00Z).",
+  "key": {
+    "kind": "secret",
+    "environment": "production"
+  },
+  "request": {
+    "protocol": 1,
+    "sdk": {
+      "name": "laravel",
+      "version": "0.1.0"
+    },
+    "sentAt": "2026-10-09T18:00:00Z",
+    "items": [
+      {
+        "type": "event",
+        "id": "ev-0038",
+        "ts": "2026-10-09T19:00:00Z",
+        "name": "paywall_viewed"
+      },
+      {
+        "type": "event",
+        "id": "ev-0039",
+        "ts": "2026-10-02T18:00:00Z",
+        "name": "paywall_viewed"
+      }
+    ]
+  },
+  "expect": {
+    "accepted": 2,
+    "rejected": []
+  }
+}

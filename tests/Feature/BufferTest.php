@@ -1,0 +1,207 @@
+<?php
+
+use Illuminate\Cache\ArrayStore;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Sleep;
+use Sidetower\Laravel\Buffer;
+
+require_once __DIR__.'/../Support/helpers.php';
+
+it('writes the recorded items to the cache in one go and keeps their order', function () {
+    sdk()->record(sdkCheckinItem('first'));
+    sdk()->record(sdkCheckinItem('second'));
+
+    expect(Cache::get('sidetower:buffer'))->toBeNull();
+
+    sdk()->persist();
+    sdk()->record(sdkCheckinItem('third'));
+    sdk()->persist();
+
+    expect(array_column(Cache::get('sidetower:buffer'), 'monitor'))->toBe(['first', 'second', 'third'])
+        ->and(sdk()->pending())->toBe([]);
+});
+
+it('does not touch the cache when there is nothing to write', function () {
+    sdkUseStore('down');
+
+    sdk()->persist();
+
+    expect(sdk()->pending())->toBe([]);
+});
+
+it('drops the oldest items past max_items and counts them', function () {
+    config()->set('sidetower.buffer.max_items', 3);
+
+    foreach (['a', 'b'] as $monitor) {
+        sdk()->record(sdkCheckinItem($monitor));
+    }
+    sdk()->persist();
+
+    foreach (['c', 'd', 'e'] as $monitor) {
+        sdk()->record(sdkCheckinItem($monitor));
+    }
+    sdk()->persist();
+
+    expect(array_column(sdkBuffered(), 'monitor'))->toBe(['c', 'd', 'e'])
+        ->and(app(Buffer::class)->dropped())->toBe(2)
+        ->and(Cache::get('sidetower:dropped'))->toBe(2);
+});
+
+it('keeps counting drops that come after an earlier count', function () {
+    config()->set('sidetower.buffer.max_items', 1);
+
+    foreach (['a', 'b', 'c'] as $monitor) {
+        sdk()->record(sdkCheckinItem($monitor));
+        sdk()->persist();
+    }
+
+    expect(array_column(sdkBuffered(), 'monitor'))->toBe(['c'])
+        ->and(app(Buffer::class)->dropped())->toBe(2);
+});
+
+it('removes sent items by id and leaves the ones added meanwhile', function () {
+    $buffer = app(Buffer::class);
+    $buffer->push([['id' => 'a', 'type' => 'checkin'], ['id' => 'b', 'type' => 'checkin']]);
+
+    $sending = $buffer->all();
+    $buffer->push([['id' => 'c', 'type' => 'checkin']]);
+    $buffer->remove(array_column($sending, 'id'));
+
+    expect(array_column($buffer->all(), 'id'))->toBe(['c']);
+
+    $buffer->remove(['c']);
+
+    expect(Cache::has('sidetower:buffer'))->toBeFalse();
+});
+
+it('takes drops off the counter without losing the ones counted meanwhile', function () {
+    $buffer = app(Buffer::class);
+    $buffer->cache()->increment('sidetower:dropped', 5);
+
+    $seen = $buffer->dropped();
+    $buffer->cache()->increment('sidetower:dropped', 2);
+    $buffer->forgetDropped($seen);
+
+    expect($buffer->dropped())->toBe(2);
+});
+
+it('uses the cache store named in buffer.store', function () {
+    config()->set('cache.stores.sidetower-buffer', ['driver' => 'array']);
+    config()->set('sidetower.buffer.store', 'sidetower-buffer');
+
+    sdk()->record(sdkCheckinItem());
+    sdk()->persist();
+
+    expect(Cache::store('sidetower-buffer')->get('sidetower:buffer'))->toHaveCount(1)
+        ->and(Cache::store('array')->get('sidetower:buffer'))->toBeNull();
+});
+
+it('writes under a lock, and keeps the items in memory when the lock stays taken', function () {
+    Sleep::fake(syncWithCarbon: true);
+    Carbon::setTestNow(Carbon::now());
+
+    $lock = Cache::lock('sidetower:buffer:lock', 30);
+    expect($lock->get())->toBeTrue();
+
+    sdk()->record(sdkCheckinItem());
+    sdk()->persist();
+
+    expect(sdkBuffered())->toBe([])
+        ->and(sdk()->pending())->toHaveCount(1);
+
+    $lock->release();
+    sdk()->persist();
+
+    expect(sdkBuffered())->toHaveCount(1)
+        ->and(sdk()->pending())->toBe([]);
+});
+
+it('releases the lock after a write', function () {
+    sdk()->record(sdkCheckinItem());
+    sdk()->persist();
+
+    $lock = Cache::lock('sidetower:buffer:lock', 5);
+
+    expect($lock->get())->toBeTrue();
+    $lock->release();
+});
+
+it('writes without a lock when the store has none', function () {
+    sdkUseStore('no-lock');
+
+    sdk()->record(sdkCheckinItem('a'));
+    sdk()->persist();
+    sdk()->record(sdkCheckinItem('b'));
+    sdk()->persist();
+
+    expect(array_column(sdkBuffered(), 'monitor'))->toBe(['a', 'b']);
+});
+
+it('keeps the items in memory while the cache is down and writes them when it is back', function () {
+    sdkUseStore('down');
+
+    sdk()->record(sdkCheckinItem('a'));
+    sdk()->persist();
+    sdk()->record(sdkCheckinItem('b'));
+    sdk()->persist();
+
+    expect(array_column(sdk()->pending(), 'monitor'))->toBe(['a', 'b']);
+
+    config()->set('sidetower.buffer.store', null);
+    sdk()->persist();
+
+    expect(array_column(sdkBuffered(), 'monitor'))->toBe(['a', 'b'])
+        ->and(sdk()->pending())->toBe([]);
+});
+
+it('bounds the memory while the cache is down and counts what it dropped once the cache is back', function () {
+    config()->set('sidetower.buffer.max_items', 3);
+    sdkUseStore('down');
+
+    foreach (['a', 'b', 'c', 'd', 'e'] as $monitor) {
+        sdk()->record(sdkCheckinItem($monitor));
+        sdk()->persist();
+    }
+
+    expect(array_column(sdk()->pending(), 'monitor'))->toBe(['c', 'd', 'e']);
+
+    config()->set('sidetower.buffer.store', null);
+    sdk()->persist();
+
+    expect(array_column(sdkBuffered(), 'monitor'))->toBe(['c', 'd', 'e'])
+        ->and(app(Buffer::class)->dropped())->toBe(2);
+});
+
+it('survives garbage in the cache', function () {
+    Cache::put('sidetower:buffer', 'not a list', 60);
+
+    sdk()->record(sdkCheckinItem());
+    sdk()->persist();
+
+    expect(sdkBuffered())->toHaveCount(1);
+});
+
+it('reads from the array store like any other', function () {
+    expect(Cache::getStore())->toBeInstanceOf(ArrayStore::class);
+});
+
+it('knows whether the store keeps items between processes', function (?string $store, bool $persistent) {
+    config()->set('cache.stores.files', ['driver' => 'file', 'path' => sys_get_temp_dir()]);
+    config()->set('cache.stores.nothing', ['driver' => 'null']);
+    config()->set('sidetower.buffer.store', $store);
+
+    expect(app(Buffer::class)->persistent())->toBe($persistent);
+})->with([
+    'the default store in tests is array' => [null, false],
+    'array' => ['array', false],
+    'null' => ['nothing', false],
+    'file' => ['files', true],
+]);
+
+it('follows the default cache store when no store is named', function () {
+    config()->set('cache.stores.files', ['driver' => 'file', 'path' => sys_get_temp_dir()]);
+    config()->set('cache.default', 'files');
+
+    expect(app(Buffer::class)->persistent())->toBeTrue();
+});

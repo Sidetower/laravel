@@ -1,0 +1,65 @@
+{
+  "description": "A request is accepted as a whole even when some items are not: the rest are processed and the bad ones listed with their position.",
+  "key": {
+    "kind": "secret",
+    "environment": "production"
+  },
+  "request": {
+    "protocol": 1,
+    "sdk": {
+      "name": "laravel",
+      "version": "0.1.0"
+    },
+    "sentAt": "2026-10-09T18:00:00Z",
+    "items": [
+      {
+        "type": "event",
+        "id": "ev-0066",
+        "ts": "2026-10-09T17:59:30Z",
+        "name": "paywall_viewed"
+      },
+      {
+        "type": "event",
+        "id": "ev-0067",
+        "ts": "2026-09-01T00:00:00Z",
+        "name": "paywall_viewed"
+      },
+      {
+        "type": "checkin",
+        "id": "ci-0068",
+        "ts": "2026-10-09T17:59:30Z",
+        "monitor": "scheduler",
+        "status": "ok"
+      },
+      {
+        "type": "screenshot",
+        "id": "ev-0069",
+        "ts": "2026-10-09T17:59:30Z",
+        "name": "paywall_viewed"
+      },
+      {
+        "type": "deploy",
+        "id": "dp-0070",
+        "ts": "2026-10-09T17:59:30Z",
+        "release": ""
+      }
+    ]
+  },
+  "expect": {
+    "accepted": 2,
+    "rejected": [
+      {
+        "index": 1,
+        "error": "stale_item"
+      },
+      {
+        "index": 3,
+        "error": "unknown_type"
+      },
+      {
+        "index": 4,
+        "error": "invalid_item"
+      }
+    ]
+  }
+}

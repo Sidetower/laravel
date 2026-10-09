@@ -1,0 +1,34 @@
+{
+  "description": "source.environment must equal the environment of the key, as on /v1/ingest.",
+  "key": {
+    "kind": "secret",
+    "environment": "production"
+  },
+  "request": {
+    "protocol": 1,
+    "sdk": {
+      "name": "laravel",
+      "version": "0.1.0"
+    },
+    "sentAt": "2026-10-09T18:00:00Z",
+    "items": [
+      {
+        "type": "ai.usage",
+        "id": "hist-env-0001",
+        "ts": "2026-06-01T00:00:00Z",
+        "operation": "story.generate",
+        "provider": "openrouter",
+        "model": "google/gemini-2.5-flash",
+        "status": "ok",
+        "inputTokens": 1,
+        "outputTokens": 1
+      }
+    ],
+    "source": {
+      "environment": "staging"
+    }
+  },
+  "expect": {
+    "error": "environment_mismatch"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "description": "A type this version does not know stays unknown_type in import mode; type_not_allowed is only for types that exist.",
+  "key": {
+    "kind": "secret",
+    "environment": "production"
+  },
+  "request": {
+    "protocol": 1,
+    "sdk": {
+      "name": "laravel",
+      "version": "0.1.0"
+    },
+    "sentAt": "2026-10-09T18:00:00Z",
+    "items": [
+      {
+        "type": "ai.cost",
+        "id": "hist-un-0001",
+        "ts": "2026-06-01T00:00:00Z"
+      },
+      {
+        "type": "metric",
+        "id": "hist-un-0002",
+        "ts": "2026-06-01T00:00:00Z",
+        "name": "m",
+        "kind": "gauge",
+        "value": 1
+      }
+    ]
+  },
+  "expect": {
+    "accepted": 0,
+    "rejected": [
+      {
+        "index": 0,
+        "error": "unknown_type"
+      },
+      {
+        "index": 1,
+        "error": "type_not_allowed"
+      }
+    ]
+  }
+}

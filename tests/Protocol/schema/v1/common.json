@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "common.json",
+  "title": "Protocol v1: shared definitions",
+  "$defs": {
+    "id": {
+      "description": "Made by the SDK. A resent item keeps its id and is not counted twice.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_.:-]{1,64}$"
+    },
+    "timestamp": {
+      "description": "RFC 3339 date-time with a time zone: 'Z' or an offset, upper-case 'T' and 'Z'. The server also refuses dates that do not exist (February 31st), which the pattern cannot. Items more than 1 hour ahead of the server clock or older than 7 days (400 days on POST /v1/import) are refused as stale_item, which a schema cannot express.",
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,9})?(Z|[+-]\\d{2}:\\d{2})$"
+    },
+    "uuid": {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+    },
+    "environment": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{0,19}$"
+    },
+    "nonNegativeInteger": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "nonNegativeNumber": {
+      "type": "number",
+      "minimum": 0
+    },
+    "attributes": {
+      "description": "Flat map, at most 20 entries. Never prompts, responses, user ids, e-mail addresses or IP addresses.",
+      "type": "object",
+      "maxProperties": 20,
+      "propertyNames": { "minLength": 1, "maxLength": 40 },
+      "additionalProperties": { "type": ["string", "number", "boolean"], "maxLength": 200 }
+    },
+    "tags": {
+      "type": "object",
+      "maxProperties": 10,
+      "propertyNames": { "minLength": 1, "maxLength": 40 },
+      "additionalProperties": { "type": "string", "maxLength": 100 }
+    }
+  }
+}

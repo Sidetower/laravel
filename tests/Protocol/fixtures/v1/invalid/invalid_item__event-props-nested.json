@@ -1,0 +1,38 @@
+{
+  "description": "props is a flat map, like attributes.",
+  "key": {
+    "kind": "publishable",
+    "environment": "production"
+  },
+  "request": {
+    "protocol": 1,
+    "sdk": {
+      "name": "laravel",
+      "version": "0.1.0"
+    },
+    "sentAt": "2026-10-09T18:00:00Z",
+    "items": [
+      {
+        "type": "event",
+        "id": "ev-0089",
+        "ts": "2026-10-09T17:59:30Z",
+        "name": "paywall_viewed",
+        "props": {
+          "cart": [
+            1,
+            2
+          ]
+        }
+      }
+    ]
+  },
+  "expect": {
+    "accepted": 0,
+    "rejected": [
+      {
+        "index": 0,
+        "error": "invalid_item"
+      }
+    ]
+  }
+}

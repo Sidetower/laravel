@@ -1,0 +1,50 @@
+{
+  "description": "Every source field, and timestamps in the forms an SDK may send: UTC, an offset, fractional seconds of 3 and 9 digits. Servers normalise them to UTC.",
+  "key": {
+    "kind": "secret",
+    "environment": "production"
+  },
+  "request": {
+    "protocol": 1,
+    "sdk": {
+      "name": "laravel",
+      "version": "0.1.0"
+    },
+    "sentAt": "2026-10-09T18:00:00Z",
+    "items": [
+      {
+        "type": "event",
+        "id": "ev-0031",
+        "ts": "2026-10-09T17:59:30Z",
+        "name": "paywall_viewed"
+      },
+      {
+        "type": "event",
+        "id": "ev-0032",
+        "ts": "2026-10-09T20:59:30+03:00",
+        "name": "paywall_viewed"
+      },
+      {
+        "type": "event",
+        "id": "ev-0033",
+        "ts": "2026-10-09T17:59:30.123Z",
+        "name": "paywall_viewed"
+      },
+      {
+        "type": "event",
+        "id": "ev-0034",
+        "ts": "2026-10-09T17:59:30.123456789-00:00",
+        "name": "paywall_viewed"
+      }
+    ],
+    "source": {
+      "environment": "production",
+      "release": "a1b2c3d",
+      "host": "srv-1"
+    }
+  },
+  "expect": {
+    "accepted": 4,
+    "rejected": []
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "description": "A phone reporting that it is alive, with every optional field. The install id is upper-cased on purpose: servers store it lower-case.",
+  "key": {
+    "kind": "publishable",
+    "environment": "production"
+  },
+  "request": {
+    "protocol": 1,
+    "sdk": {
+      "name": "laravel",
+      "version": "0.1.0"
+    },
+    "sentAt": "2026-10-09T18:00:00Z",
+    "items": [
+      {
+        "type": "install.active",
+        "id": "ia-0015",
+        "ts": "2026-10-09T17:59:30Z",
+        "installId": "3F0C1C2E-8A4B-4D57-9B0E-5A1F2C3D4E5F",
+        "version": "1.4.0",
+        "platform": "ios",
+        "build": "212",
+        "runtimeVersion": "46",
+        "updateId": "0b8f7a52-1c3d-4e6f-8a9b-7c6d5e4f3a2b",
+        "osVersion": "19.0.1",
+        "locale": "tr-TR"
+      },
+      {
+        "type": "install.active",
+        "id": "ia-0016",
+        "ts": "2026-10-09T17:59:30Z",
+        "installId": "0b8f7a52-1c3d-4e6f-8a9b-7c6d5e4f3a2b",
+        "version": "1.4.0",
+        "platform": "android"
+      }
+    ],
+    "source": {
+      "environment": "production",
+      "release": "1.4.0+212"
+    }
+  },
+  "expect": {
+    "accepted": 2,
+    "rejected": []
+  }
+}

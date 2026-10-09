@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "import.json",
+  "title": "Protocol v1: the body of POST /v1/import",
+  "description": "The envelope of envelope.json, with items limited to the two types the import endpoint takes: ai.usage and deploy. Any other type is refused by the server as type_not_allowed (per item, the request stays 202). Items may be up to 400 days old instead of 7, which a schema cannot express (see common.json#/$defs/timestamp). Only secret (sk_) keys may call the endpoint.",
+  "allOf": [{ "$ref": "envelope.json" }],
+  "properties": {
+    "items": {
+      "items": {
+        "oneOf": [{ "$ref": "item.json#/$defs/ai.usage" }, { "$ref": "item.json#/$defs/deploy" }]
+      }
+    }
+  }
+}

@@ -1,0 +1,83 @@
+{
+  "description": "The report must carry schema: 1.",
+  "key": {
+    "kind": "secret",
+    "environment": "production"
+  },
+  "request": {
+    "protocol": 1,
+    "sdk": {
+      "name": "laravel",
+      "version": "0.1.0"
+    },
+    "sentAt": "2026-10-09T18:00:00Z",
+    "items": [
+      {
+        "type": "health.snapshot",
+        "id": "hs-0077",
+        "ts": "2026-10-09T17:59:30Z",
+        "report": {
+          "schema": 2,
+          "app": "koreda",
+          "generatedAt": "2026-10-09T17:59:00Z",
+          "runtime": {
+            "php": "8.4.3",
+            "laravel": "13.17.0",
+            "environment": "production",
+            "commit": "abc1234"
+          },
+          "system": {
+            "hostname": "srv-1",
+            "cpuCount": 4,
+            "load": [
+              0.42,
+              0.37,
+              0.3
+            ],
+            "memory": {
+              "totalBytes": 8000000000,
+              "availableBytes": 3200000000
+            },
+            "disk": {
+              "path": "/",
+              "totalBytes": 160000000000,
+              "freeBytes": 52000000000
+            },
+            "uptimeSeconds": 1234567
+          },
+          "database": {
+            "ok": true,
+            "latencyMs": 2.4,
+            "driver": "mysql"
+          },
+          "cache": {
+            "ok": true,
+            "driver": "redis"
+          },
+          "queue": {
+            "connection": "redis",
+            "pending": {
+              "default": 0
+            },
+            "failedLast24h": 0,
+            "failedTotal": 3
+          },
+          "scheduler": {
+            "lastRunAt": "2026-10-09T17:58:00Z"
+          },
+          "aiCosts": null,
+          "errors": []
+        }
+      }
+    ]
+  },
+  "expect": {
+    "accepted": 0,
+    "rejected": [
+      {
+        "index": 0,
+        "error": "invalid_item"
+      }
+    ]
+  }
+}

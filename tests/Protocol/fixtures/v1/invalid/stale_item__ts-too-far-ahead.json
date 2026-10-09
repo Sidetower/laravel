@@ -1,0 +1,32 @@
+{
+  "description": "More than 1 hour ahead of the server clock (a device with a wrong clock).",
+  "key": {
+    "kind": "secret",
+    "environment": "production"
+  },
+  "request": {
+    "protocol": 1,
+    "sdk": {
+      "name": "laravel",
+      "version": "0.1.0"
+    },
+    "sentAt": "2026-10-09T18:00:00Z",
+    "items": [
+      {
+        "type": "event",
+        "id": "ev-0063",
+        "ts": "2026-10-09T19:00:01Z",
+        "name": "paywall_viewed"
+      }
+    ]
+  },
+  "expect": {
+    "accepted": 0,
+    "rejected": [
+      {
+        "index": 0,
+        "error": "stale_item"
+      }
+    ]
+  }
+}

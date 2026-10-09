@@ -1,0 +1,48 @@
+{
+  "description": "One second more than 400 days behind the server clock. The 200-day-old item before it is accepted (it would be stale on /v1/ingest).",
+  "key": {
+    "kind": "secret",
+    "environment": "production"
+  },
+  "request": {
+    "protocol": 1,
+    "sdk": {
+      "name": "laravel",
+      "version": "0.1.0"
+    },
+    "sentAt": "2026-10-09T18:00:00Z",
+    "items": [
+      {
+        "type": "ai.usage",
+        "id": "hist-old-0001",
+        "ts": "2026-03-23T18:00:00Z",
+        "operation": "story.generate",
+        "provider": "openrouter",
+        "model": "google/gemini-2.5-flash",
+        "status": "ok",
+        "inputTokens": 10,
+        "outputTokens": 5
+      },
+      {
+        "type": "ai.usage",
+        "id": "hist-old-0002",
+        "ts": "2025-09-04T17:59:59Z",
+        "operation": "story.generate",
+        "provider": "openrouter",
+        "model": "google/gemini-2.5-flash",
+        "status": "ok",
+        "inputTokens": 10,
+        "outputTokens": 5
+      }
+    ]
+  },
+  "expect": {
+    "accepted": 1,
+    "rejected": [
+      {
+        "index": 1,
+        "error": "stale_item"
+      }
+    ]
+  }
+}

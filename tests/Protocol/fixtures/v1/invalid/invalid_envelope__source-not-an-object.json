@@ -1,0 +1,27 @@
+{
+  "description": "source is a string.",
+  "key": {
+    "kind": "secret",
+    "environment": "production"
+  },
+  "request": {
+    "protocol": 1,
+    "sdk": {
+      "name": "laravel",
+      "version": "0.1.0"
+    },
+    "sentAt": "2026-10-09T18:00:00Z",
+    "items": [
+      {
+        "type": "event",
+        "id": "ev-0049",
+        "ts": "2026-10-09T17:59:30Z",
+        "name": "paywall_viewed"
+      }
+    ],
+    "source": "production"
+  },
+  "expect": {
+    "error": "invalid_envelope"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "description": "Timestamps exactly 400 days behind the server clock and exactly 1 hour ahead of it are still accepted (the fixtures are checked at 2026-10-09T18:00:00Z). The same 400-day-old item is stale_item on /v1/ingest.",
+  "key": {
+    "kind": "secret",
+    "environment": "production"
+  },
+  "request": {
+    "protocol": 1,
+    "sdk": {
+      "name": "laravel",
+      "version": "0.1.0"
+    },
+    "sentAt": "2026-10-09T18:00:00Z",
+    "items": [
+      {
+        "type": "ai.usage",
+        "id": "hist-edge-0001",
+        "ts": "2025-09-04T18:00:00Z",
+        "operation": "story.generate",
+        "provider": "openrouter",
+        "model": "google/gemini-2.5-flash",
+        "status": "ok",
+        "inputTokens": 10,
+        "outputTokens": 5
+      },
+      {
+        "type": "ai.usage",
+        "id": "hist-edge-0002",
+        "ts": "2026-10-09T19:00:00Z",
+        "operation": "story.generate",
+        "provider": "openrouter",
+        "model": "google/gemini-2.5-flash",
+        "status": "ok",
+        "inputTokens": 10,
+        "outputTokens": 5
+      }
+    ]
+  },
+  "expect": {
+    "accepted": 2,
+    "rejected": []
+  }
+}

@@ -31,7 +31,10 @@ return [
 
     /*
     | Must match the environment the key was made for. Null = the application
-    | environment (APP_ENV), lower-cased.
+    | environment (APP_ENV), lower-cased. A name that is not lower-case letters,
+    | digits and hyphens, starting with a letter, at most 20 characters
+    | (production, staging, eu-west), switches the SDK off with one warning in
+    | the log.
     */
     'environment' => env('SIDETOWER_ENVIRONMENT'),
 
@@ -80,7 +83,12 @@ return [
     'checkins' => [
         /* One check-in per run of every scheduled task. */
         'scheduled_tasks' => true,
-        /* Task names or commands that are not reported. */
+        /*
+        | Tasks that are not reported: their name (the description, else the
+        | command without php and artisan), `schedule:` and the name, or the
+        | whole command. `*` matches any text: 'telescope:*'. The SDK's own
+        | sidetower:send is never reported.
+        */
         'ignore' => [],
     ],
 

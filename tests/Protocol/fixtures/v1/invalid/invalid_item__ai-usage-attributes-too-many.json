@@ -1,0 +1,60 @@
+{
+  "description": "At most 20 attributes.",
+  "key": {
+    "kind": "secret",
+    "environment": "production"
+  },
+  "request": {
+    "protocol": 1,
+    "sdk": {
+      "name": "laravel",
+      "version": "0.1.0"
+    },
+    "sentAt": "2026-10-09T18:00:00Z",
+    "items": [
+      {
+        "type": "ai.usage",
+        "id": "ai-0083",
+        "ts": "2026-10-09T17:59:30Z",
+        "operation": "story.generate",
+        "provider": "openrouter",
+        "model": "google/gemini-2.5-flash",
+        "status": "ok",
+        "inputTokens": 1200,
+        "outputTokens": 640,
+        "attributes": {
+          "k0": 0,
+          "k1": 1,
+          "k2": 2,
+          "k3": 3,
+          "k4": 4,
+          "k5": 5,
+          "k6": 6,
+          "k7": 7,
+          "k8": 8,
+          "k9": 9,
+          "k10": 10,
+          "k11": 11,
+          "k12": 12,
+          "k13": 13,
+          "k14": 14,
+          "k15": 15,
+          "k16": 16,
+          "k17": 17,
+          "k18": 18,
+          "k19": 19,
+          "k20": 20
+        }
+      }
+    ]
+  },
+  "expect": {
+    "accepted": 0,
+    "rejected": [
+      {
+        "index": 0,
+        "error": "invalid_item"
+      }
+    ]
+  }
+}

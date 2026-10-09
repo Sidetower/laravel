@@ -1,0 +1,42 @@
+{
+  "description": "An attribute value is text, a number or a boolean; no objects, arrays or null.",
+  "key": {
+    "kind": "secret",
+    "environment": "production"
+  },
+  "request": {
+    "protocol": 1,
+    "sdk": {
+      "name": "laravel",
+      "version": "0.1.0"
+    },
+    "sentAt": "2026-10-09T18:00:00Z",
+    "items": [
+      {
+        "type": "ai.usage",
+        "id": "ai-0082",
+        "ts": "2026-10-09T17:59:30Z",
+        "operation": "story.generate",
+        "provider": "openrouter",
+        "model": "google/gemini-2.5-flash",
+        "status": "ok",
+        "inputTokens": 1200,
+        "outputTokens": 640,
+        "attributes": {
+          "prompt": {
+            "text": "hello"
+          }
+        }
+      }
+    ]
+  },
+  "expect": {
+    "accepted": 0,
+    "rejected": [
+      {
+        "index": 0,
+        "error": "invalid_item"
+      }
+    ]
+  }
+}
