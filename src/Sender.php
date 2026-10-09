@@ -23,6 +23,7 @@ class Sender
         protected Buffer $buffer,
         protected Transport $transport,
         protected HealthReport $health,
+        protected Release $release,
     ) {}
 
     public function run(): Drain
@@ -43,6 +44,8 @@ class Sender
             'expectedIntervalS' => 60,
         ]));
 
+        $deployed = config('sidetower.deploys', true) ? $this->attempt('record the deploy', fn (): ?string => $this->recordDeploy()) : null;
+
         $dropped = $this->attempt('read the drop counter', fn (): int => $this->buffer->dropped()) ?? 0;
 
         if ($dropped > 0) {
@@ -56,11 +59,49 @@ class Sender
 
         $this->sidetower->persist();
 
-        if ($dropped > 0 && $this->sidetower->pending() === []) {
-            $this->attempt('reset the drop counter', fn () => $this->buffer->forgetDropped($dropped));
+        if ($this->sidetower->pending() === []) {
+            if ($deployed !== null) {
+                $this->attempt('remember the release', fn () => $this->buffer->cache()->forever(Buffer::RELEASE, $deployed));
+            }
+
+            if ($dropped > 0) {
+                $this->attempt('reset the drop counter', fn () => $this->buffer->forgetDropped($dropped));
+            }
         }
 
         return $this->drain();
+    }
+
+    /**
+     * A `deploy` item when the release differs from the one the last run saw. Its id is made of the environment and the
+     * release, so servers that all notice the same deploy report one. Returns the release when it recorded one; the run
+     * remembers it once the item is safe in the buffer.
+     */
+    protected function recordDeploy(): ?string
+    {
+        $release = $this->release->name();
+
+        if ($release === null || $this->buffer->cache()->get(Buffer::RELEASE) === $release) {
+            return null;
+        }
+
+        $item = [
+            'type' => 'deploy',
+            'id' => 'deploy-'.substr(hash('sha256', $this->sidetower->environment().'|'.$release), 0, 32),
+            'release' => $release,
+        ];
+
+        if (($commit = $this->release->commit()) !== null) {
+            $item['commit'] = $commit;
+        }
+
+        if (($branch = $this->release->branch()) !== null) {
+            $item['branch'] = $branch;
+        }
+
+        $this->sidetower->record($item);
+
+        return $release;
     }
 
     /**
