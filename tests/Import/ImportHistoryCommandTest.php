@@ -351,7 +351,7 @@ it('refuses an environment name the protocol does not accept', function () {
     ArrayHistorySource::register('s', historyItems(1));
     Http::fake();
 
-    $this->artisan('sidetower:import-history')->expectsOutputToContain('environment name')->assertExitCode(1);
+    $this->artisan('sidetower:import-history')->expectsOutputToContain('environment is not one the protocol accepts')->assertExitCode(1);
 
     Http::assertNothingSent();
 });

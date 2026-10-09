@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sidetower\Laravel\Tests\Ai;
 
+use Sidetower\Laravel\Buffer;
 use Sidetower\Laravel\Sidetower;
 
 /**
@@ -19,7 +20,7 @@ final class AiTestHelpers
     public static function items(): array
     {
         return array_values(array_filter(
-            app(Sidetower::class)->pending(),
+            [...app(Buffer::class)->all(), ...app(Sidetower::class)->pending()],
             fn (array $item): bool => ($item['type'] ?? null) === 'ai.usage',
         ));
     }

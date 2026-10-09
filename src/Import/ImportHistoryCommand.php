@@ -117,7 +117,7 @@ class ImportHistoryCommand extends Command
     protected function ready(Sidetower $sidetower, ImportClient $client): bool
     {
         if (! $sidetower->enabled()) {
-            $this->error('Sidetower is off: set SIDETOWER_KEY and SIDETOWER_ENDPOINT (and SIDETOWER_ENABLED=true while running tests).');
+            $this->error('Sidetower is off: '.$sidetower->offBecause().'.');
 
             return false;
         }
