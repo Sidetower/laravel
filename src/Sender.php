@@ -6,6 +6,7 @@ namespace Sidetower\Laravel;
 
 use Closure;
 use Illuminate\Support\Carbon;
+use Sidetower\Laravel\Health\HealthReport;
 use Throwable;
 
 /**
@@ -21,11 +22,19 @@ class Sender
         protected Sidetower $sidetower,
         protected Buffer $buffer,
         protected Transport $transport,
+        protected HealthReport $health,
     ) {}
 
     public function run(): Drain
     {
         $this->attempt('record the run', fn () => $this->buffer->cache()->forever(Buffer::LAST_RUN, Carbon::now()->utc()->format('Y-m-d\TH:i:s\Z')));
+
+        if (config('sidetower.health.enabled', true)) {
+            $this->attempt('record the health snapshot', fn () => $this->sidetower->record([
+                'type' => 'health.snapshot',
+                'report' => $this->health->build(),
+            ]));
+        }
 
         $this->attempt('record the scheduler check-in', fn () => $this->sidetower->record([
             'type' => 'checkin',

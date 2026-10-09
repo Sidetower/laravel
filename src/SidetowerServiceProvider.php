@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Sidetower\Laravel\Ai\AiServices;
 use Sidetower\Laravel\Console\SendCommand;
+use Sidetower\Laravel\Health\HealthReport;
 
 class SidetowerServiceProvider extends ServiceProvider
 {
@@ -23,6 +24,7 @@ class SidetowerServiceProvider extends ServiceProvider
         $this->app->singleton(Buffer::class);
         $this->app->singleton(Release::class);
         $this->app->singleton(Transport::class);
+        $this->app->singleton(HealthReport::class);
         $this->app->singleton(Sender::class);
 
         AiServices::register($this->app);
