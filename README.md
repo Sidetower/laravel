@@ -160,8 +160,9 @@ logged at `debug` level; the rest of the batch is unaffected.
 
 ## AI usage
 
-Prism and `laravel/ai` calls are picked up from the Http client without any code. Name the operation they belong to, record
-calls that do not go through the Http client, and import old cost tables: see [docs/ai.md](docs/ai.md).
+Calls made through Laravel's Http client are picked up without any code; so are those of a library such as Prism or
+`laravel/ai` if it makes its requests through that client. Name the operation a call belongs to, record calls that do not go
+through the Http client, and import old cost tables: see [docs/ai.md](docs/ai.md).
 
 ## Testing your application
 
