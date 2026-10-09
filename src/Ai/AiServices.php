@@ -17,6 +17,7 @@ use Illuminate\Queue\Events\JobProcessed;
 use Illuminate\Queue\Events\JobProcessing;
 use Sidetower\Laravel\Ai\Http\HttpCapture;
 use Sidetower\Laravel\Ai\Http\ProviderRegistry;
+use Sidetower\Laravel\Import\ImportHistoryCommand;
 use Throwable;
 
 /**
@@ -49,7 +50,7 @@ class AiServices
      */
     public static function commands(): array
     {
-        return [];
+        return [ImportHistoryCommand::class];
     }
 
     /**
