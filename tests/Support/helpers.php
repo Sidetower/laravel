@@ -3,7 +3,9 @@
 declare(strict_types=1);
 
 use Illuminate\Cache\Repository;
+use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 use Sidetower\Laravel\Buffer;
 use Sidetower\Laravel\Sidetower;
 use Sidetower\Laravel\Tests\Support\BrokenStore;
@@ -52,5 +54,59 @@ if (! function_exists('useStore')) {
 
         config()->set("cache.stores.{$kind}", ['driver' => $kind]);
         config()->set('sidetower.buffer.store', $kind);
+    }
+}
+
+if (! function_exists('envelopeOf')) {
+    /**
+     * The envelope a request carried: gunzipped, decoded.
+     *
+     * @return array<string, mixed>
+     */
+    function envelopeOf(Request $request): array
+    {
+        return json_decode((string) gzdecode($request->body()), true, flags: JSON_THROW_ON_ERROR);
+    }
+}
+
+if (! function_exists('sentEnvelopes')) {
+    /**
+     * The envelopes sent so far through the Http client, in order.
+     *
+     * @return list<array<string, mixed>>
+     */
+    function sentEnvelopes(): array
+    {
+        return Http::recorded()->map(fn (array $pair): array => envelopeOf($pair[0]))->values()->all();
+    }
+}
+
+if (! function_exists('fakeServer')) {
+    /**
+     * A server that accepts everything it is sent (202), unless told what to answer.
+     */
+    function fakeServer(mixed $answer = null): void
+    {
+        Http::fake([
+            'sidetower.test/*' => $answer ?? fn (Request $request) => Http::response(['accepted' => count(envelopeOf($request)['items']), 'rejected' => []], 202),
+        ]);
+    }
+}
+
+if (! function_exists('fillBuffer')) {
+    /**
+     * Puts items straight into the buffer, as earlier runs would have left them.
+     *
+     * @param  array<string, mixed>  $overrides
+     */
+    function fillBuffer(int $count, array $overrides = []): void
+    {
+        $items = [];
+
+        foreach (range(1, $count) as $number) {
+            $items[] = [...aCheckin("monitor-{$number}"), 'id' => "item-{$number}", 'ts' => '2026-10-09T17:59:30.000Z', ...$overrides];
+        }
+
+        app(Buffer::class)->push($items);
     }
 }
