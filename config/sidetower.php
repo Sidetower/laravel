@@ -1,0 +1,99 @@
+<?php
+
+return [
+
+    /*
+    |--------------------------------------------------------------------------
+    | Key and endpoint
+    |--------------------------------------------------------------------------
+    |
+    | The secret key (sk_...) of this server component, made on the project's
+    | settings page, and the ingest address the page shows next to it. Without
+    | both the SDK records nothing and sends nothing.
+    |
+    */
+
+    'key' => env('SIDETOWER_KEY'),
+
+    'endpoint' => env('SIDETOWER_ENDPOINT'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Switches
+    |--------------------------------------------------------------------------
+    |
+    | `enabled` turns the whole SDK off. It is also off while the application
+    | runs its own tests, unless `SIDETOWER_ENABLED=true` is set explicitly.
+    |
+    */
+
+    'enabled' => env('SIDETOWER_ENABLED'),
+
+    /*
+    | Must match the environment the key was made for. Null = the application
+    | environment (APP_ENV), lower-cased.
+    */
+    'environment' => env('SIDETOWER_ENVIRONMENT'),
+
+    /*
+    | Null = the commit read from .git or from a releases/<sha> directory.
+    */
+    'release' => env('SIDETOWER_RELEASE'),
+
+    /*
+    | Seconds. Sending happens in a scheduled command, never in a request,
+    | so a slow or unreachable endpoint only delays that command this long.
+    */
+    'timeout' => (float) env('SIDETOWER_TIMEOUT', 2.0),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Buffer
+    |--------------------------------------------------------------------------
+    |
+    | Items wait in the cache until the scheduled `sidetower:send` command
+    | sends them, once a minute. When the buffer is full the oldest items are
+    | dropped. Null store = the default cache store.
+    |
+    */
+
+    'buffer' => [
+        'store' => env('SIDETOWER_CACHE_STORE'),
+        'max_items' => 5000,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | What is collected
+    |--------------------------------------------------------------------------
+    */
+
+    'health' => [
+        'enabled' => true,
+        /*
+        | Queues whose pending jobs are counted. Null = the queues of the
+        | Horizon supervisors when Horizon is installed, else ['default'].
+        */
+        'queues' => null,
+    ],
+
+    'checkins' => [
+        /* One check-in per run of every scheduled task. */
+        'scheduled_tasks' => true,
+        /* Task names or commands that are not reported. */
+        'ignore' => [],
+    ],
+
+    /* A deploy item when the release changes. */
+    'deploys' => true,
+
+    'ai' => [
+        /*
+        | Reads token and unit usage from the responses of AI providers that
+        | the Http client receives (Prism and laravel/ai use it). Prompts and
+        | responses themselves are never sent.
+        */
+        'http' => true,
+    ],
+
+];
