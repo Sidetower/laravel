@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Sidetower\Laravel\Ai\Http;
 
 use Sidetower\Laravel\Ai\Http\Parsers\AnthropicParser;
+use Sidetower\Laravel\Ai\Http\Parsers\ElevenLabsParser;
+use Sidetower\Laravel\Ai\Http\Parsers\FalParser;
 use Sidetower\Laravel\Ai\Http\Parsers\GoogleParser;
 use Sidetower\Laravel\Ai\Http\Parsers\OpenAiCompatibleParser;
 use Sidetower\Laravel\Ai\Http\Parsers\ProviderParser;
@@ -94,6 +96,8 @@ class ProviderRegistry
         return $this->parsers[$provider] ??= match ($provider) {
             'anthropic' => new AnthropicParser,
             'google', 'gemini' => new GoogleParser,
+            'fal' => new FalParser,
+            'elevenlabs' => new ElevenLabsParser,
             default => new OpenAiCompatibleParser,
         };
     }

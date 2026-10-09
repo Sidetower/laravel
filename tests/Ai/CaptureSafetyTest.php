@@ -134,6 +134,8 @@ it('records a failed connection of every kind of provider', function (string $ur
 })->with([
     'openai' => ['https://api.openai.com/v1/chat/completions', 'openai', ['model' => 'gpt-4o']],
     'google' => ['https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent', 'google', []],
+    'fal' => ['https://fal.run/fal-ai/flux/schnell', 'fal', ['prompt' => 'x']],
+    'elevenlabs' => ['https://api.elevenlabs.io/v1/text-to-speech/v1', 'elevenlabs', ['text' => 'x']],
 ]);
 
 it('ignores a failed connection to a host that is not an AI provider', function () {
