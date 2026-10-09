@@ -13,7 +13,7 @@ require_once __DIR__.'/../Support/helpers.php';
  *
  * @return array{0: int, 1: string}
  */
-function runSidetowerTest(): array
+function sdkRunTestCommand(): array
 {
     $code = Artisan::call('sidetower:test');
 
@@ -21,9 +21,9 @@ function runSidetowerTest(): array
 }
 
 it('sends one check-in named sidetower:test and says it was accepted', function () {
-    fakeServer();
+    sdkFakeServer();
 
-    [$code, $output] = runSidetowerTest();
+    [$code, $output] = sdkRunTestCommand();
 
     expect($code)->toBe(0)
         ->and($output)->toContain("Sending a check-in to https://sidetower.test/v1/ingest as environment 'testing'")
@@ -31,29 +31,29 @@ it('sends one check-in named sidetower:test and says it was accepted', function 
 
     Http::assertSentCount(1);
 
-    $items = sentEnvelopes()[0]['items'];
+    $items = sdkSentEnvelopes()[0]['items'];
 
     expect($items)->toHaveCount(1)
         ->and($items[0])->toMatchArray(['type' => 'checkin', 'monitor' => 'sidetower:test', 'status' => 'ok'])
         ->and($items[0])->not->toHaveKey('expectedIntervalS')
-        ->and(buffered())->toBe([]);
+        ->and(sdkBuffered())->toBe([]);
 });
 
 it('says the check-in was rejected, with the error code', function () {
-    fakeServer(Http::response(['accepted' => 0, 'rejected' => [['index' => 0, 'error' => 'invalid_item']]], 202));
+    sdkFakeServer(Http::response(['accepted' => 0, 'rejected' => [['index' => 0, 'error' => 'invalid_item']]], 202));
 
-    [$code, $output] = runSidetowerTest();
+    [$code, $output] = sdkRunTestCommand();
 
     expect($code)->toBe(1)
         ->and($output)->toContain('Rejected: the server refused the check-in as invalid_item');
 
-    expect(buffered())->toBe([]);
+    expect(sdkBuffered())->toBe([]);
 });
 
 it('says the request was refused, and what to check', function (int $status, string $error, string $hint) {
-    fakeServer(Http::response(['error' => $error, 'message' => 'x'], $status));
+    sdkFakeServer(Http::response(['error' => $error, 'message' => 'x'], $status));
 
-    [$code, $output] = runSidetowerTest();
+    [$code, $output] = sdkRunTestCommand();
 
     expect($code)->toBe(1)
         ->and($output)->toContain("Refused: the server answered HTTP {$status} ({$error})")
@@ -68,30 +68,30 @@ it('says the request was refused, and what to check', function (int $status, str
 it('says the server could not be reached, and leaves nothing in the buffer', function (string $message) {
     Http::fake(fn () => throw new ConnectionException($message));
 
-    [$code, $output] = runSidetowerTest();
+    [$code, $output] = sdkRunTestCommand();
 
     expect($code)->toBe(1)
         ->and($output)->toContain('Could not reach Sidetower: '.$message)
-        ->and(buffered())->toBe([]);
+        ->and(sdkBuffered())->toBe([]);
 })->with([
     'timeout' => 'cURL error 28: Operation timed out after 2001 milliseconds',
     'connection refused' => 'cURL error 7: Failed to connect',
 ]);
 
 it('says so when the server answers with an error of its own', function () {
-    fakeServer(Http::response('Bad gateway', 502));
+    sdkFakeServer(Http::response('Bad gateway', 502));
 
-    [$code, $output] = runSidetowerTest();
+    [$code, $output] = sdkRunTestCommand();
 
     expect($code)->toBe(1)
         ->and($output)->toContain('Could not reach Sidetower: the server answered HTTP 502');
 });
 
 it('says why the SDK is off', function (Closure $configure, string $reason) {
-    fakeServer();
+    sdkFakeServer();
     $configure();
 
-    [$code, $output] = runSidetowerTest();
+    [$code, $output] = sdkRunTestCommand();
 
     expect($code)->toBe(1)
         ->and($output)->toContain('Sidetower is off:')
@@ -107,36 +107,36 @@ it('says why the SDK is off', function (Closure $configure, string $reason) {
 ]);
 
 it('sends the items that were waiting along with it', function () {
-    fakeServer();
-    fillBuffer(2);
+    sdkFakeServer();
+    sdkFillBuffer(2);
 
-    [$code, $output] = runSidetowerTest();
+    [$code, $output] = sdkRunTestCommand();
 
     expect($code)->toBe(0)
         ->and($output)->toContain('Accepted');
 
-    expect(array_column(sentEnvelopes()[0]['items'], 'monitor'))->toBe(['monitor-1', 'monitor-2', 'sidetower:test'])
-        ->and(buffered())->toBe([]);
+    expect(array_column(sdkSentEnvelopes()[0]['items'], 'monitor'))->toBe(['monitor-1', 'monitor-2', 'sidetower:test'])
+        ->and(sdkBuffered())->toBe([]);
 });
 
 it('says when the check-in waits behind a backlog it could not get through in one run', function () {
-    fakeServer();
-    fillBuffer(2600);
+    sdkFakeServer();
+    sdkFillBuffer(2600);
 
-    [$code, $output] = runSidetowerTest();
+    [$code, $output] = sdkRunTestCommand();
 
     expect($code)->toBe(1)
         ->and($output)->toContain('waits behind other items');
 
-    expect(buffered('checkin'))->not->toBeEmpty()
-        ->and(collect(buffered())->contains(fn (array $item) => $item['monitor'] === 'sidetower:test'))->toBeFalse();
+    expect(sdkBuffered('checkin'))->not->toBeEmpty()
+        ->and(collect(sdkBuffered())->contains(fn (array $item) => $item['monitor'] === 'sidetower:test'))->toBeFalse();
 });
 
 it('says unreachable, not backlog, when the server fails before it gets to the check-in', function () {
     Http::fake(fn () => throw new ConnectionException('cURL error 28: timed out'));
-    fillBuffer(1200);
+    sdkFillBuffer(1200);
 
-    [$code, $output] = runSidetowerTest();
+    [$code, $output] = sdkRunTestCommand();
 
     expect($code)->toBe(1)
         ->and($output)->toContain('Could not reach Sidetower: cURL error 28');
@@ -153,7 +153,7 @@ it('works under the fake without sending', function () {
 });
 
 it('sends with the key as bearer token to the endpoint', function () {
-    fakeServer();
+    sdkFakeServer();
 
     $this->artisan('sidetower:test');
 
@@ -162,22 +162,22 @@ it('sends with the key as bearer token to the endpoint', function () {
 });
 
 it('says the check-in was accepted when the server first found the batch too large and then took its halves', function () {
-    fakeServer(Http::sequence()
+    sdkFakeServer(Http::sequence()
         ->push(['error' => 'payload_too_large', 'message' => 'x'], 413)
         ->push(['accepted' => 2, 'rejected' => []], 202)
         ->push(['accepted' => 1, 'rejected' => []], 202));
-    fillBuffer(3);
+    sdkFillBuffer(3);
 
-    [$code, $output] = runSidetowerTest();
+    [$code, $output] = sdkRunTestCommand();
 
     expect($code)->toBe(0)
         ->and($output)->toContain('Accepted');
 });
 
 it('warns when the buffer is in a store that forgets between processes', function () {
-    fakeServer();
+    sdkFakeServer();
 
-    [, $output] = runSidetowerTest();
+    [, $output] = sdkRunTestCommand();
 
     expect($output)->toContain('does not keep items between processes');
 });

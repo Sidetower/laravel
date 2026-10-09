@@ -16,18 +16,18 @@ use Sidetower\Laravel\Tests\Support\NoLockStore;
  * Shared by the tests of this package; each test file that needs them requires this file.
  */
 
-if (! function_exists('sidetower')) {
-    function sidetower(): Sidetower
+if (! function_exists('sdk')) {
+    function sdk(): Sidetower
     {
         return app(Sidetower::class);
     }
 }
 
-if (! function_exists('buffered')) {
+if (! function_exists('sdkBuffered')) {
     /**
      * @return list<array<string, mixed>>
      */
-    function buffered(?string $type = null): array
+    function sdkBuffered(?string $type = null): array
     {
         $items = app(Buffer::class)->all();
 
@@ -35,21 +35,21 @@ if (! function_exists('buffered')) {
     }
 }
 
-if (! function_exists('aCheckin')) {
+if (! function_exists('sdkCheckinItem')) {
     /**
      * @return array<string, mixed>
      */
-    function aCheckin(string $monitor = 'nightly', string $status = 'ok'): array
+    function sdkCheckinItem(string $monitor = 'nightly', string $status = 'ok'): array
     {
         return ['type' => 'checkin', 'monitor' => $monitor, 'status' => $status];
     }
 }
 
-if (! function_exists('useStore')) {
+if (! function_exists('sdkUseStore')) {
     /**
      * Makes the buffer use a cache store that is not one of the framework's: a store without locks, or one that is down.
      */
-    function useStore(string $kind): void
+    function sdkUseStore(string $kind): void
     {
         Cache::extend($kind, fn () => new Repository($kind === 'down' ? new BrokenStore : new NoLockStore));
 
@@ -58,70 +58,70 @@ if (! function_exists('useStore')) {
     }
 }
 
-if (! function_exists('envelopeOf')) {
+if (! function_exists('sdkEnvelopeOf')) {
     /**
      * The envelope a request carried: gunzipped, decoded.
      *
      * @return array<string, mixed>
      */
-    function envelopeOf(Request $request): array
+    function sdkEnvelopeOf(Request $request): array
     {
         return json_decode((string) gzdecode($request->body()), true, flags: JSON_THROW_ON_ERROR);
     }
 }
 
-if (! function_exists('sentEnvelopes')) {
+if (! function_exists('sdkSentEnvelopes')) {
     /**
      * The envelopes sent so far through the Http client, in order.
      *
      * @return list<array<string, mixed>>
      */
-    function sentEnvelopes(): array
+    function sdkSentEnvelopes(): array
     {
-        return Http::recorded()->map(fn (array $pair): array => envelopeOf($pair[0]))->values()->all();
+        return Http::recorded()->map(fn (array $pair): array => sdkEnvelopeOf($pair[0]))->values()->all();
     }
 }
 
-if (! function_exists('fakeServer')) {
+if (! function_exists('sdkFakeServer')) {
     /**
      * A server that accepts everything it is sent (202), unless told what to answer. Replaces an earlier one.
      */
-    function fakeServer(mixed $answer = null): void
+    function sdkFakeServer(mixed $answer = null): void
     {
         Http::swap(new Factory(app('events')));
 
         Http::fake([
-            'sidetower.test/*' => $answer ?? fn (Request $request) => Http::response(['accepted' => count(envelopeOf($request)['items']), 'rejected' => []], 202),
+            'sidetower.test/*' => $answer ?? fn (Request $request) => Http::response(['accepted' => count(sdkEnvelopeOf($request)['items']), 'rejected' => []], 202),
         ]);
     }
 }
 
-if (! function_exists('fillBuffer')) {
+if (! function_exists('sdkFillBuffer')) {
     /**
      * Puts items straight into the buffer, as earlier runs would have left them.
      *
      * @param  array<string, mixed>  $overrides
      */
-    function fillBuffer(int $count, array $overrides = []): void
+    function sdkFillBuffer(int $count, array $overrides = []): void
     {
         $items = [];
 
         foreach (range(1, $count) as $number) {
-            $items[] = [...aCheckin("monitor-{$number}"), 'id' => "item-{$number}", 'ts' => '2026-10-09T17:59:30.000Z', ...$overrides];
+            $items[] = [...sdkCheckinItem("monitor-{$number}"), 'id' => "item-{$number}", 'ts' => '2026-10-09T17:59:30.000Z', ...$overrides];
         }
 
         app(Buffer::class)->push($items);
     }
 }
 
-if (! function_exists('checkout')) {
+if (! function_exists('sdkCheckout')) {
     /**
      * Points the application at a temporary directory that looks like a checkout: `.git/HEAD` with the given content and
      * the given files below `.git/`. With `$under` the directory is `<under>/<sha>`, like a Deployer release.
      *
      * @param  array<string, string>  $git  path below `.git/` => content
      */
-    function checkout(string $head, array $git = [], ?string $under = null): string
+    function sdkCheckout(string $head, array $git = [], ?string $under = null): string
     {
         $root = sys_get_temp_dir().'/sidetower-checkout-'.bin2hex(random_bytes(6));
         $path = $under === null ? $root : "{$root}/{$under}";

@@ -17,14 +17,14 @@ beforeEach(function () {
     config()->set('sidetower.deploys', false);
 });
 
-function sendEvent(): ?Event
+function sdkSendEvent(): ?Event
 {
     return collect(app(Schedule::class)->events())->first(fn (Event $event) => str_contains((string) $event->command, 'sidetower:send'));
 }
 
 describe('the schedule', function () {
     it('runs sidetower:send every minute without overlapping and on every server', function () {
-        $event = sendEvent();
+        $event = sdkSendEvent();
 
         expect($event)->not->toBeNull()
             ->and($event->expression)->toBe('* * * * *')
@@ -34,25 +34,25 @@ describe('the schedule', function () {
     });
 
     it('lets a killed run go after ten minutes', function () {
-        expect(sendEvent()->expiresAt)->toBe(10);
+        expect(sdkSendEvent()->expiresAt)->toBe(10);
     });
 
     it('does not run while the SDK is off', function () {
-        expect(sendEvent()->filtersPass(app()))->toBeTrue();
+        expect(sdkSendEvent()->filtersPass(app()))->toBeTrue();
 
         config()->set('sidetower.enabled', false);
 
-        expect(sendEvent()->filtersPass(app()))->toBeFalse();
+        expect(sdkSendEvent()->filtersPass(app()))->toBeFalse();
     });
 });
 
 describe('the run', function () {
     it('records the scheduler check-in and sends it', function () {
-        fakeServer();
+        sdkFakeServer();
 
         $this->artisan('sidetower:send')->assertSuccessful();
 
-        $item = sentEnvelopes()[0]['items'][0];
+        $item = sdkSentEnvelopes()[0]['items'][0];
 
         expect($item)->toMatchArray([
             'type' => 'checkin',
@@ -61,16 +61,16 @@ describe('the run', function () {
             'expectedIntervalS' => 60,
             'ts' => '2026-10-09T13:39:30.000Z',
         ])->and($item['id'])->toMatch('/^[0-9a-z]{26}$/')
-            ->and(buffered())->toBe([]);
+            ->and(sdkBuffered())->toBe([]);
     });
 
     it('sends what earlier runs left, then what is new', function () {
-        fakeServer();
-        fillBuffer(2);
+        sdkFakeServer();
+        sdkFillBuffer(2);
 
         $this->artisan('sidetower:send')->assertSuccessful();
 
-        $items = sentEnvelopes()[0]['items'];
+        $items = sdkSentEnvelopes()[0]['items'];
 
         expect(array_column($items, 'id'))->toHaveCount(3)
             ->and(array_column(array_slice($items, 0, 2), 'id'))->toBe(['item-1', 'item-2'])
@@ -78,16 +78,16 @@ describe('the run', function () {
     });
 
     it('sends what the process itself recorded before the command ran', function () {
-        fakeServer();
-        sidetower()->record(aCheckin('from this process'));
+        sdkFakeServer();
+        sdk()->record(sdkCheckinItem('from this process'));
 
         $this->artisan('sidetower:send')->assertSuccessful();
 
-        expect(array_column(sentEnvelopes()[0]['items'], 'monitor'))->toBe(['from this process', 'scheduler']);
+        expect(array_column(sdkSentEnvelopes()[0]['items'], 'monitor'))->toBe(['from this process', 'scheduler']);
     });
 
     it('notes when it ran, for the health report', function () {
-        fakeServer();
+        sdkFakeServer();
 
         $this->artisan('sidetower:send')->assertSuccessful();
 
@@ -95,7 +95,7 @@ describe('the run', function () {
     });
 
     it('says what happened', function () {
-        fakeServer();
+        sdkFakeServer();
 
         $this->artisan('sidetower:send')->expectsOutputToContain('1 sent, 0 rejected, 0 dropped, 0 waiting (1 request)');
     });
@@ -105,17 +105,17 @@ describe('the run', function () {
 
         $this->artisan('sidetower:send')->assertSuccessful();
 
-        expect(array_column(buffered(), 'monitor'))->toBe(['scheduler']);
+        expect(array_column(sdkBuffered(), 'monitor'))->toBe(['scheduler']);
     });
 
     it('warns when the buffer is in a store that forgets between processes', function () {
-        fakeServer();
+        sdkFakeServer();
 
         $this->artisan('sidetower:send')->expectsOutputToContain('does not keep items between processes')->assertSuccessful();
     });
 
     it('does not warn about a store that keeps items', function () {
-        fakeServer();
+        sdkFakeServer();
         config()->set('cache.stores.files', ['driver' => 'file', 'path' => sys_get_temp_dir().'/sidetower-cache-'.bin2hex(random_bytes(3))]);
         config()->set('sidetower.buffer.store', 'files');
 
@@ -123,8 +123,8 @@ describe('the run', function () {
     });
 
     it('succeeds when the cache is down', function () {
-        fakeServer();
-        useStore('down');
+        sdkFakeServer();
+        sdkUseStore('down');
 
         $this->artisan('sidetower:send')->assertSuccessful();
 
@@ -132,24 +132,24 @@ describe('the run', function () {
     });
 
     it('does nothing while the SDK is off', function () {
-        fakeServer();
+        sdkFakeServer();
         config()->set('sidetower.key', null);
 
         $this->artisan('sidetower:send')->expectsOutputToContain('Sidetower is off')->assertSuccessful();
 
         Http::assertNothingSent();
-        expect(buffered())->toBe([]);
+        expect(sdkBuffered())->toBe([]);
     });
 });
 
 describe('the dropped items', function () {
     it('are sent as a counter metric and the count starts over', function () {
-        fakeServer();
+        sdkFakeServer();
         Cache::put(Buffer::DROPPED, 5);
 
         $this->artisan('sidetower:send')->assertSuccessful();
 
-        $metric = collect(sentEnvelopes()[0]['items'])->firstWhere('type', 'metric');
+        $metric = collect(sdkSentEnvelopes()[0]['items'])->firstWhere('type', 'metric');
 
         expect($metric)->toMatchArray(['name' => 'sidetower.dropped', 'kind' => 'counter', 'value' => 5])
             ->and($metric['id'])->toMatch('/^[0-9a-z]{26}$/')
@@ -157,41 +157,41 @@ describe('the dropped items', function () {
     });
 
     it('come from a buffer that was too full', function () {
-        fakeServer();
+        sdkFakeServer();
         config()->set('sidetower.buffer.max_items', 20);
-        fillBuffer(27);
+        sdkFillBuffer(27);
 
         $this->artisan('sidetower:send')->assertSuccessful();
 
-        $metric = collect(sentEnvelopes()[0]['items'])->firstWhere('type', 'metric');
+        $metric = collect(sdkSentEnvelopes()[0]['items'])->firstWhere('type', 'metric');
 
         expect($metric['value'])->toBe(7);
     });
 
     it('send no metric when nothing was dropped', function () {
-        fakeServer();
+        sdkFakeServer();
 
         $this->artisan('sidetower:send')->assertSuccessful();
 
-        expect(collect(sentEnvelopes()[0]['items'])->where('type', 'metric'))->toBeEmpty();
+        expect(collect(sdkSentEnvelopes()[0]['items'])->where('type', 'metric'))->toBeEmpty();
     });
 
     it('wait in the buffer with the metric while the server cannot be reached, and are counted once', function () {
         $down = true;
-        fakeServer(function (Request $request) use (&$down) {
-            return $down ? throw new ConnectionException('down') : Http::response(['accepted' => count(envelopeOf($request)['items']), 'rejected' => []], 202);
+        sdkFakeServer(function (Request $request) use (&$down) {
+            return $down ? throw new ConnectionException('down') : Http::response(['accepted' => count(sdkEnvelopeOf($request)['items']), 'rejected' => []], 202);
         });
         Cache::put(Buffer::DROPPED, 3);
 
         $this->artisan('sidetower:send')->assertSuccessful();
 
-        expect(buffered('metric'))->toHaveCount(1)
-            ->and(buffered('metric')[0]['value'])->toBe(3)
+        expect(sdkBuffered('metric'))->toHaveCount(1)
+            ->and(sdkBuffered('metric')[0]['value'])->toBe(3)
             ->and(app(Buffer::class)->dropped())->toBe(0);
 
         $down = false;
         $this->artisan('sidetower:send')->assertSuccessful();
 
-        expect(collect(sentEnvelopes()[0]['items'])->where('type', 'metric'))->toHaveCount(1);
+        expect(collect(sdkSentEnvelopes()[0]['items'])->where('type', 'metric'))->toHaveCount(1);
     });
 });

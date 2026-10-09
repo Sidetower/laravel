@@ -13,12 +13,12 @@ use Sidetower\Laravel\Release;
 
 require_once __DIR__.'/../Support/helpers.php';
 
-function healthReport(): array
+function sdkHealthReport(): array
 {
     return app(HealthReport::class)->build();
 }
 
-function createFailedJobsTable(): void
+function sdkCreateFailedJobsTable(): void
 {
     Schema::create('failed_jobs', function (Blueprint $table) {
         $table->id();
@@ -38,7 +38,7 @@ beforeEach(function () {
 
 describe('the report', function () {
     it('has the shape of the contract', function () {
-        $report = healthReport();
+        $report = sdkHealthReport();
 
         expect($report)->toHaveKeys(['schema', 'app', 'generatedAt', 'runtime', 'system', 'database', 'cache', 'queue', 'scheduler', 'errors'])
             ->and($report['schema'])->toBe(1)
@@ -59,17 +59,17 @@ describe('the report', function () {
     });
 
     it('does not carry AI costs: those come as ai.usage items', function () {
-        expect(healthReport())->not->toHaveKey('aiCosts');
+        expect(sdkHealthReport())->not->toHaveKey('aiCosts');
     });
 
     it('is named after the application', function () {
         config()->set('app.name', 'Koreda');
 
-        expect(healthReport()['app'])->toBe('Koreda');
+        expect(sdkHealthReport()['app'])->toBe('Koreda');
     });
 
     it('writes the system numbers from /proc where it can', function () {
-        $system = healthReport()['system'];
+        $system = sdkHealthReport()['system'];
 
         if (PHP_OS_FAMILY !== 'Linux') {
             $this->markTestSkipped('/proc is Linux only');
@@ -83,7 +83,7 @@ describe('the report', function () {
     });
 
     it('encodes as JSON the way the panel reads it', function () {
-        $json = json_decode(json_encode(healthReport()));
+        $json = json_decode(json_encode(sdkHealthReport()));
 
         expect($json->errors)->toBe([])
             ->and($json->queue->pending)->toBeObject()
@@ -91,7 +91,7 @@ describe('the report', function () {
     });
 
     it('is a cache probe that leaves nothing behind', function () {
-        healthReport();
+        sdkHealthReport();
 
         expect(Cache::get('sidetower:health-probe'))->toBeNull();
     });
@@ -99,7 +99,7 @@ describe('the report', function () {
 
 describe('the queue section', function () {
     it('counts failed jobs of the last 24 hours and in total', function () {
-        createFailedJobsTable();
+        sdkCreateFailedJobsTable();
 
         foreach ([now()->subHours(2), now()->subDays(3)] as $failedAt) {
             DB::table('failed_jobs')->insert([
@@ -112,23 +112,23 @@ describe('the queue section', function () {
             ]);
         }
 
-        expect(healthReport()['queue'])->toMatchArray(['failedLast24h' => 1, 'failedTotal' => 2]);
+        expect(sdkHealthReport()['queue'])->toMatchArray(['failedLast24h' => 1, 'failedTotal' => 2]);
     });
 
     it('reports failed jobs as unknown without a failed_jobs table', function () {
-        expect(healthReport()['queue'])->toMatchArray(['failedLast24h' => null, 'failedTotal' => null]);
+        expect(sdkHealthReport()['queue'])->toMatchArray(['failedLast24h' => null, 'failedTotal' => null]);
     });
 
     it('reports failed jobs as unknown when they are not kept in a database', function () {
         config()->set('queue.failed', ['driver' => 'null']);
 
-        expect(healthReport()['queue'])->toMatchArray(['failedLast24h' => null, 'failedTotal' => null]);
+        expect(sdkHealthReport()['queue'])->toMatchArray(['failedLast24h' => null, 'failedTotal' => null]);
     });
 
     it('counts the queues named in health.queues', function () {
         config()->set('sidetower.health.queues', ['emails', 'exports']);
 
-        expect(healthReport()['queue']['pending'])->toBe(['emails' => 0, 'exports' => 0]);
+        expect(sdkHealthReport()['queue']['pending'])->toBe(['emails' => 0, 'exports' => 0]);
     });
 
     it('reads the queues of the Horizon supervisors when none are named', function () {
@@ -169,7 +169,7 @@ describe('a section that fails', function () {
     it('becomes null with its message in the errors list, and the rest is unharmed', function () {
         config()->set('queue.default', 'missing-connection');
 
-        $report = healthReport();
+        $report = sdkHealthReport();
 
         expect($report['queue'])->toBeNull()
             ->and($report['database']['ok'])->toBeTrue()
@@ -181,7 +181,7 @@ describe('a section that fails', function () {
         config()->set('database.connections.unreachable', ['driver' => 'sqlite', 'database' => '/nonexistent/sidetower.sqlite', 'prefix' => '']);
         config()->set('database.default', 'unreachable');
 
-        $report = healthReport();
+        $report = sdkHealthReport();
 
         expect($report['database'])->toBe(['ok' => false, 'latencyMs' => null, 'driver' => 'sqlite'])
             ->and(collect($report['errors'])->contains(fn (string $error) => str_starts_with($error, 'database: ')))->toBeTrue();
@@ -190,24 +190,24 @@ describe('a section that fails', function () {
     it('cuts a long message to 200 characters and an ellipsis', function () {
         config()->set('queue.default', str_repeat('x', 500));
 
-        expect(mb_strlen(healthReport()['errors'][0]))->toBeLessThanOrEqual(strlen('queue: ') + 203);
+        expect(mb_strlen(sdkHealthReport()['errors'][0]))->toBeLessThanOrEqual(strlen('queue: ') + 203);
     });
 });
 
 describe('the scheduler section', function () {
     it('has no last run until sidetower:send ran', function () {
-        expect(healthReport()['scheduler'])->toBe(['lastRunAt' => null]);
+        expect(sdkHealthReport()['scheduler'])->toBe(['lastRunAt' => null]);
     });
 
     it('shows when sidetower:send ran last', function () {
-        fakeServer();
+        sdkFakeServer();
         config()->set('sidetower.health.enabled', false);
 
         $this->artisan('sidetower:send')->assertSuccessful();
 
         Carbon::setTestNow('2026-10-09T13:41:20Z');
 
-        expect(healthReport()['scheduler'])->toBe(['lastRunAt' => '2026-10-09T13:40:00Z']);
+        expect(sdkHealthReport()['scheduler'])->toBe(['lastRunAt' => '2026-10-09T13:40:00Z']);
     });
 });
 
@@ -216,8 +216,8 @@ describe('the size', function () {
         app()->setBasePath('/'.str_repeat('deep/', 4000));
         config()->set('sidetower.health.queues', array_map(fn (int $number) => 'queue-with-a-long-name-'.$number, range(1, 1000)));
 
-        $report = healthReport();
-        $item = ['type' => 'health.snapshot', 'id' => sidetower()->newId(), 'ts' => sidetower()->timestamp(), 'report' => $report];
+        $report = sdkHealthReport();
+        $item = ['type' => 'health.snapshot', 'id' => sdk()->newId(), 'ts' => sdk()->timestamp(), 'report' => $report];
 
         expect(strlen(json_encode($item)))->toBeLessThanOrEqual(16 * 1024)
             ->and(strlen($report['system']['disk']['path']))->toBeLessThanOrEqual(120)
@@ -239,7 +239,7 @@ describe('the size', function () {
     });
 
     it('leaves a small report alone', function () {
-        $report = healthReport();
+        $report = sdkHealthReport();
 
         expect($report['system']['disk']['path'])->toBe(base_path());
     });
@@ -247,11 +247,11 @@ describe('the size', function () {
 
 describe('the snapshot item', function () {
     it('is recorded by every run when health.enabled is on', function () {
-        fakeServer();
+        sdkFakeServer();
 
         $this->artisan('sidetower:send')->assertSuccessful();
 
-        $items = sentEnvelopes()[0]['items'];
+        $items = sdkSentEnvelopes()[0]['items'];
 
         expect($items[0]['type'])->toBe('health.snapshot')
             ->and($items[0]['report']['schema'])->toBe(1)
@@ -260,16 +260,16 @@ describe('the snapshot item', function () {
     });
 
     it('is left out when health.enabled is off', function () {
-        fakeServer();
+        sdkFakeServer();
         config()->set('sidetower.health.enabled', false);
 
         $this->artisan('sidetower:send')->assertSuccessful();
 
-        expect(collect(sentEnvelopes()[0]['items'])->pluck('type')->all())->toBe(['checkin']);
+        expect(collect(sdkSentEnvelopes()[0]['items'])->pluck('type')->all())->toBe(['checkin']);
     });
 
     it('is not lost with the rest when the report cannot be built', function () {
-        fakeServer();
+        sdkFakeServer();
         config()->set('sidetower.health.queues', [new stdClass]);
 
         $this->artisan('sidetower:send')->assertSuccessful();

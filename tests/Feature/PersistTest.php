@@ -10,26 +10,26 @@ use Sidetower\Laravel\Sidetower;
 require_once __DIR__.'/../Support/helpers.php';
 
 it('does not write to the cache while recording', function () {
-    sidetower()->record(aCheckin());
+    sdk()->record(sdkCheckinItem());
 
-    expect(buffered())->toBe([])
-        ->and(sidetower()->pending())->toHaveCount(1);
+    expect(sdkBuffered())->toBe([])
+        ->and(sdk()->pending())->toHaveCount(1);
 });
 
 it('persists when the request, command or Octane request ends', function () {
-    sidetower()->record(aCheckin('terminating'));
+    sdk()->record(sdkCheckinItem('terminating'));
 
     app()->terminate();
 
-    expect(array_column(buffered(), 'monitor'))->toBe(['terminating']);
+    expect(array_column(sdkBuffered(), 'monitor'))->toBe(['terminating']);
 
     foreach (['RequestTerminated', 'TaskTerminated', 'TickTerminated'] as $event) {
-        sidetower()->record(aCheckin($event));
+        sdk()->record(sdkCheckinItem($event));
 
         Event::dispatch("Laravel\\Octane\\Events\\{$event}", [new stdClass]);
     }
 
-    expect(array_column(buffered(), 'monitor'))->toBe(['terminating', 'RequestTerminated', 'TaskTerminated', 'TickTerminated']);
+    expect(array_column(sdkBuffered(), 'monitor'))->toBe(['terminating', 'RequestTerminated', 'TaskTerminated', 'TickTerminated']);
 });
 
 it('persists when a queue job is processed, fails or throws', function () {
@@ -41,56 +41,56 @@ it('persists when a queue job is processed, fails or throws', function () {
     ];
 
     foreach ($events as $name => $event) {
-        sidetower()->record(aCheckin($name));
+        sdk()->record(sdkCheckinItem($name));
 
-        expect(array_column(buffered(), 'monitor'))->not->toContain($name);
+        expect(array_column(sdkBuffered(), 'monitor'))->not->toContain($name);
 
         Event::dispatch($event);
     }
 
-    expect(array_column(buffered(), 'monitor'))->toBe(['processed', 'failed', 'exception']);
+    expect(array_column(sdkBuffered(), 'monitor'))->toBe(['processed', 'failed', 'exception']);
 });
 
 it('persists as soon as 200 items are in memory', function () {
     foreach (range(1, Sidetower::PERSIST_THRESHOLD - 1) as $number) {
-        sidetower()->record(aCheckin("m{$number}"));
+        sdk()->record(sdkCheckinItem("m{$number}"));
     }
 
-    expect(buffered())->toBe([]);
+    expect(sdkBuffered())->toBe([]);
 
-    sidetower()->record(aCheckin('the 200th'));
+    sdk()->record(sdkCheckinItem('the 200th'));
 
-    expect(buffered())->toHaveCount(200)
-        ->and(sidetower()->pending())->toBe([]);
+    expect(sdkBuffered())->toHaveCount(200)
+        ->and(sdk()->pending())->toBe([]);
 });
 
 it('does not try the cache at every record while it is down', function () {
-    useStore('down');
+    sdkUseStore('down');
 
     foreach (range(1, Sidetower::PERSIST_THRESHOLD + 50) as $number) {
-        sidetower()->record(aCheckin("m{$number}"));
+        sdk()->record(sdkCheckinItem("m{$number}"));
     }
 
-    expect(sidetower()->pending())->toHaveCount(Sidetower::PERSIST_THRESHOLD + 50);
+    expect(sdk()->pending())->toHaveCount(Sidetower::PERSIST_THRESHOLD + 50);
 });
 
 it('never throws out of record or persist', function () {
-    useStore('down');
+    sdkUseStore('down');
     config()->set('sidetower.buffer.max_items', 'many');
 
-    sidetower()->record(aCheckin());
-    sidetower()->persist();
+    sdk()->record(sdkCheckinItem());
+    sdk()->persist();
     app()->terminate();
 
-    expect(sidetower()->pending())->toHaveCount(1);
+    expect(sdk()->pending())->toHaveCount(1);
 });
 
 it('does nothing at all while the SDK is off', function () {
     config()->set('sidetower.enabled', false);
 
-    sidetower()->record(aCheckin());
+    sdk()->record(sdkCheckinItem());
     app()->terminate();
 
-    expect(sidetower()->pending())->toBe([])
-        ->and(buffered())->toBe([]);
+    expect(sdk()->pending())->toBe([])
+        ->and(sdkBuffered())->toBe([]);
 });

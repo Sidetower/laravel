@@ -9,41 +9,41 @@ use Sidetower\Laravel\Buffer;
 require_once __DIR__.'/../Support/helpers.php';
 
 it('writes the recorded items to the cache in one go and keeps their order', function () {
-    sidetower()->record(aCheckin('first'));
-    sidetower()->record(aCheckin('second'));
+    sdk()->record(sdkCheckinItem('first'));
+    sdk()->record(sdkCheckinItem('second'));
 
     expect(Cache::get('sidetower:buffer'))->toBeNull();
 
-    sidetower()->persist();
-    sidetower()->record(aCheckin('third'));
-    sidetower()->persist();
+    sdk()->persist();
+    sdk()->record(sdkCheckinItem('third'));
+    sdk()->persist();
 
     expect(array_column(Cache::get('sidetower:buffer'), 'monitor'))->toBe(['first', 'second', 'third'])
-        ->and(sidetower()->pending())->toBe([]);
+        ->and(sdk()->pending())->toBe([]);
 });
 
 it('does not touch the cache when there is nothing to write', function () {
-    useStore('down');
+    sdkUseStore('down');
 
-    sidetower()->persist();
+    sdk()->persist();
 
-    expect(sidetower()->pending())->toBe([]);
+    expect(sdk()->pending())->toBe([]);
 });
 
 it('drops the oldest items past max_items and counts them', function () {
     config()->set('sidetower.buffer.max_items', 3);
 
     foreach (['a', 'b'] as $monitor) {
-        sidetower()->record(aCheckin($monitor));
+        sdk()->record(sdkCheckinItem($monitor));
     }
-    sidetower()->persist();
+    sdk()->persist();
 
     foreach (['c', 'd', 'e'] as $monitor) {
-        sidetower()->record(aCheckin($monitor));
+        sdk()->record(sdkCheckinItem($monitor));
     }
-    sidetower()->persist();
+    sdk()->persist();
 
-    expect(array_column(buffered(), 'monitor'))->toBe(['c', 'd', 'e'])
+    expect(array_column(sdkBuffered(), 'monitor'))->toBe(['c', 'd', 'e'])
         ->and(app(Buffer::class)->dropped())->toBe(2)
         ->and(Cache::get('sidetower:dropped'))->toBe(2);
 });
@@ -52,11 +52,11 @@ it('keeps counting drops that come after an earlier count', function () {
     config()->set('sidetower.buffer.max_items', 1);
 
     foreach (['a', 'b', 'c'] as $monitor) {
-        sidetower()->record(aCheckin($monitor));
-        sidetower()->persist();
+        sdk()->record(sdkCheckinItem($monitor));
+        sdk()->persist();
     }
 
-    expect(array_column(buffered(), 'monitor'))->toBe(['c'])
+    expect(array_column(sdkBuffered(), 'monitor'))->toBe(['c'])
         ->and(app(Buffer::class)->dropped())->toBe(2);
 });
 
@@ -90,8 +90,8 @@ it('uses the cache store named in buffer.store', function () {
     config()->set('cache.stores.sidetower-buffer', ['driver' => 'array']);
     config()->set('sidetower.buffer.store', 'sidetower-buffer');
 
-    sidetower()->record(aCheckin());
-    sidetower()->persist();
+    sdk()->record(sdkCheckinItem());
+    sdk()->persist();
 
     expect(Cache::store('sidetower-buffer')->get('sidetower:buffer'))->toHaveCount(1)
         ->and(Cache::store('array')->get('sidetower:buffer'))->toBeNull();
@@ -104,22 +104,22 @@ it('writes under a lock, and keeps the items in memory when the lock stays taken
     $lock = Cache::lock('sidetower:buffer:lock', 30);
     expect($lock->get())->toBeTrue();
 
-    sidetower()->record(aCheckin());
-    sidetower()->persist();
+    sdk()->record(sdkCheckinItem());
+    sdk()->persist();
 
-    expect(buffered())->toBe([])
-        ->and(sidetower()->pending())->toHaveCount(1);
+    expect(sdkBuffered())->toBe([])
+        ->and(sdk()->pending())->toHaveCount(1);
 
     $lock->release();
-    sidetower()->persist();
+    sdk()->persist();
 
-    expect(buffered())->toHaveCount(1)
-        ->and(sidetower()->pending())->toBe([]);
+    expect(sdkBuffered())->toHaveCount(1)
+        ->and(sdk()->pending())->toBe([]);
 });
 
 it('releases the lock after a write', function () {
-    sidetower()->record(aCheckin());
-    sidetower()->persist();
+    sdk()->record(sdkCheckinItem());
+    sdk()->persist();
 
     $lock = Cache::lock('sidetower:buffer:lock', 5);
 
@@ -128,58 +128,58 @@ it('releases the lock after a write', function () {
 });
 
 it('writes without a lock when the store has none', function () {
-    useStore('no-lock');
+    sdkUseStore('no-lock');
 
-    sidetower()->record(aCheckin('a'));
-    sidetower()->persist();
-    sidetower()->record(aCheckin('b'));
-    sidetower()->persist();
+    sdk()->record(sdkCheckinItem('a'));
+    sdk()->persist();
+    sdk()->record(sdkCheckinItem('b'));
+    sdk()->persist();
 
-    expect(array_column(buffered(), 'monitor'))->toBe(['a', 'b']);
+    expect(array_column(sdkBuffered(), 'monitor'))->toBe(['a', 'b']);
 });
 
 it('keeps the items in memory while the cache is down and writes them when it is back', function () {
-    useStore('down');
+    sdkUseStore('down');
 
-    sidetower()->record(aCheckin('a'));
-    sidetower()->persist();
-    sidetower()->record(aCheckin('b'));
-    sidetower()->persist();
+    sdk()->record(sdkCheckinItem('a'));
+    sdk()->persist();
+    sdk()->record(sdkCheckinItem('b'));
+    sdk()->persist();
 
-    expect(array_column(sidetower()->pending(), 'monitor'))->toBe(['a', 'b']);
+    expect(array_column(sdk()->pending(), 'monitor'))->toBe(['a', 'b']);
 
     config()->set('sidetower.buffer.store', null);
-    sidetower()->persist();
+    sdk()->persist();
 
-    expect(array_column(buffered(), 'monitor'))->toBe(['a', 'b'])
-        ->and(sidetower()->pending())->toBe([]);
+    expect(array_column(sdkBuffered(), 'monitor'))->toBe(['a', 'b'])
+        ->and(sdk()->pending())->toBe([]);
 });
 
 it('bounds the memory while the cache is down and counts what it dropped once the cache is back', function () {
     config()->set('sidetower.buffer.max_items', 3);
-    useStore('down');
+    sdkUseStore('down');
 
     foreach (['a', 'b', 'c', 'd', 'e'] as $monitor) {
-        sidetower()->record(aCheckin($monitor));
-        sidetower()->persist();
+        sdk()->record(sdkCheckinItem($monitor));
+        sdk()->persist();
     }
 
-    expect(array_column(sidetower()->pending(), 'monitor'))->toBe(['c', 'd', 'e']);
+    expect(array_column(sdk()->pending(), 'monitor'))->toBe(['c', 'd', 'e']);
 
     config()->set('sidetower.buffer.store', null);
-    sidetower()->persist();
+    sdk()->persist();
 
-    expect(array_column(buffered(), 'monitor'))->toBe(['c', 'd', 'e'])
+    expect(array_column(sdkBuffered(), 'monitor'))->toBe(['c', 'd', 'e'])
         ->and(app(Buffer::class)->dropped())->toBe(2);
 });
 
 it('survives garbage in the cache', function () {
     Cache::put('sidetower:buffer', 'not a list', 60);
 
-    sidetower()->record(aCheckin());
-    sidetower()->persist();
+    sdk()->record(sdkCheckinItem());
+    sdk()->persist();
 
-    expect(buffered())->toHaveCount(1);
+    expect(sdkBuffered())->toHaveCount(1);
 });
 
 it('reads from the array store like any other', function () {

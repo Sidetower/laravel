@@ -15,7 +15,7 @@ require_once __DIR__.'/../Support/helpers.php';
 /**
  * The schedule without the SDK's own task, so that `schedule:run` does not start a second PHP process.
  */
-function emptySchedule(): Schedule
+function sdkEmptySchedule(): Schedule
 {
     $schedule = app(Schedule::class);
     $events = new ReflectionProperty(Schedule::class, 'events');
@@ -27,9 +27,9 @@ function emptySchedule(): Schedule
 /**
  * @return list<array<string, mixed>>
  */
-function checkins(): array
+function sdkCheckins(): array
 {
-    return buffered('checkin');
+    return sdkBuffered('checkin');
 }
 
 beforeEach(function () {
@@ -38,13 +38,13 @@ beforeEach(function () {
 
 describe('a task that runs', function () {
     it('checks in when it starts and when it is done', function () {
-        emptySchedule()->call(fn () => null)->name('nightly')->everyFiveMinutes();
+        sdkEmptySchedule()->call(fn () => null)->name('nightly')->everyFiveMinutes();
 
         $this->artisan('schedule:run')->assertSuccessful();
 
-        [$started, $ok] = checkins();
+        [$started, $ok] = sdkCheckins();
 
-        expect(checkins())->toHaveCount(2)
+        expect(sdkCheckins())->toHaveCount(2)
             ->and($started)->toMatchArray(['monitor' => 'schedule:nightly', 'status' => 'started', 'expectedIntervalS' => 300])
             ->and($started)->not->toHaveKey('durationMs')
             ->and($ok)->toMatchArray(['monitor' => 'schedule:nightly', 'status' => 'ok', 'expectedIntervalS' => 300])
@@ -54,131 +54,131 @@ describe('a task that runs', function () {
     });
 
     it('measures the duration from the start of the task', function () {
-        emptySchedule()->call(function () {
+        sdkEmptySchedule()->call(function () {
             usleep(30_000);
         })->name('slow')->everyMinute();
 
         $this->artisan('schedule:run')->assertSuccessful();
 
-        expect(checkins()[1]['durationMs'])->toBeGreaterThanOrEqual(30)->toBeLessThan(2000);
+        expect(sdkCheckins()[1]['durationMs'])->toBeGreaterThanOrEqual(30)->toBeLessThan(2000);
     });
 
     it('hands the items to the buffer as they happen, not when the scheduler exits', function () {
-        $schedule = emptySchedule();
+        $schedule = sdkEmptySchedule();
         $task = $schedule->call(fn () => null)->name('quick')->everyMinute();
 
         Events::dispatch(new ScheduledTaskStarting($task));
 
-        expect(array_column(checkins(), 'status'))->toBe(['started']);
+        expect(array_column(sdkCheckins(), 'status'))->toBe(['started']);
 
         Events::dispatch(new ScheduledTaskFinished($task, 0.01));
 
-        expect(array_column(checkins(), 'status'))->toBe(['started', 'ok']);
+        expect(array_column(sdkCheckins(), 'status'))->toBe(['started', 'ok']);
     });
 });
 
 describe('a task that fails', function () {
     it('reports an exception once, with its message', function () {
-        emptySchedule()->call(fn () => throw new RuntimeException('The disk is full'))->name('backup')->daily();
+        sdkEmptySchedule()->call(fn () => throw new RuntimeException('The disk is full'))->name('backup')->daily();
 
         $this->artisan('schedule:run');
 
-        expect(array_column(checkins(), 'status'))->toBe(['started', 'error'])
-            ->and(checkins()[1])->toMatchArray(['monitor' => 'schedule:backup', 'message' => 'The disk is full', 'expectedIntervalS' => 86400])
-            ->and(checkins()[1]['durationMs'])->toBeInt();
+        expect(array_column(sdkCheckins(), 'status'))->toBe(['started', 'error'])
+            ->and(sdkCheckins()[1])->toMatchArray(['monitor' => 'schedule:backup', 'message' => 'The disk is full', 'expectedIntervalS' => 86400])
+            ->and(sdkCheckins()[1]['durationMs'])->toBeInt();
     });
 
     it('cuts the message to 500 characters', function () {
-        emptySchedule()->call(fn () => throw new RuntimeException(str_repeat('é', 800)))->name('backup')->daily();
+        sdkEmptySchedule()->call(fn () => throw new RuntimeException(str_repeat('é', 800)))->name('backup')->daily();
 
         $this->artisan('schedule:run');
 
-        expect(mb_strlen(checkins()[1]['message']))->toBe(500);
+        expect(mb_strlen(sdkCheckins()[1]['message']))->toBe(500);
     });
 
     it('names the exception when it has no message', function () {
-        emptySchedule()->call(fn () => throw new LogicException)->name('backup')->daily();
+        sdkEmptySchedule()->call(fn () => throw new LogicException)->name('backup')->daily();
 
         $this->artisan('schedule:run');
 
-        expect(checkins()[1]['message'])->toBe(LogicException::class);
+        expect(sdkCheckins()[1]['message'])->toBe(LogicException::class);
     });
 
     it('reports a command that exits with a code once, even though two events fire', function () {
-        emptySchedule()->exec('exit 3')->everyMinute();
+        sdkEmptySchedule()->exec('exit 3')->everyMinute();
 
         $this->artisan('schedule:run');
 
-        expect(array_column(checkins(), 'status'))->toBe(['started', 'error'])
-            ->and(checkins()[1]['message'])->toBe('Exited with code 3');
+        expect(array_column(sdkCheckins(), 'status'))->toBe(['started', 'error'])
+            ->and(sdkCheckins()[1]['message'])->toBe('Exited with code 3');
     });
 
     it('reports a callback that returns false once', function () {
-        emptySchedule()->call(fn () => false)->name('quiet-failure')->everyMinute();
+        sdkEmptySchedule()->call(fn () => false)->name('quiet-failure')->everyMinute();
 
         $this->artisan('schedule:run');
 
-        expect(array_column(checkins(), 'status'))->toBe(['started', 'error'])
-            ->and(checkins()[1]['message'])->toBe('Exited with code 1');
+        expect(array_column(sdkCheckins(), 'status'))->toBe(['started', 'error'])
+            ->and(sdkCheckins()[1]['message'])->toBe('Exited with code 1');
     });
 
     it('goes back to ok when the next run works', function () {
-        emptySchedule()->call(fn () => throw new RuntimeException('first run'))->name('flaky')->everyMinute();
+        sdkEmptySchedule()->call(fn () => throw new RuntimeException('first run'))->name('flaky')->everyMinute();
         $this->artisan('schedule:run');
 
-        emptySchedule()->call(fn () => null)->name('flaky')->everyMinute();
+        sdkEmptySchedule()->call(fn () => null)->name('flaky')->everyMinute();
         $this->artisan('schedule:run');
 
-        expect(array_column(checkins(), 'status'))->toBe(['started', 'error', 'started', 'ok']);
+        expect(array_column(sdkCheckins(), 'status'))->toBe(['started', 'error', 'started', 'ok']);
     });
 });
 
 describe('a task in the background', function () {
     it('is done when the background process says so, not when it was launched', function () {
-        $task = emptySchedule()->exec('sleep 1')->runInBackground()->everyMinute();
+        $task = sdkEmptySchedule()->exec('sleep 1')->runInBackground()->everyMinute();
 
         Events::dispatch(new ScheduledTaskStarting($task));
         Events::dispatch(new ScheduledTaskFinished($task, 0.01));
 
-        expect(array_column(checkins(), 'status'))->toBe(['started']);
+        expect(array_column(sdkCheckins(), 'status'))->toBe(['started']);
 
         $task->exitCode = 0;
         Events::dispatch(new ScheduledBackgroundTaskFinished($task));
 
-        expect(array_column(checkins(), 'status'))->toBe(['started', 'ok'])
-            ->and(checkins()[1])->not->toHaveKey('durationMs');
+        expect(array_column(sdkCheckins(), 'status'))->toBe(['started', 'ok'])
+            ->and(sdkCheckins()[1])->not->toHaveKey('durationMs');
     });
 
     it('reports a background process that exited with a code as an error', function () {
-        $task = emptySchedule()->exec('sleep 1')->runInBackground()->everyMinute();
+        $task = sdkEmptySchedule()->exec('sleep 1')->runInBackground()->everyMinute();
         $task->exitCode = 2;
 
         Events::dispatch(new ScheduledBackgroundTaskFinished($task));
 
-        expect(checkins())->toHaveCount(1)
-            ->and(checkins()[0])->toMatchArray(['status' => 'error', 'message' => 'Exited with code 2']);
+        expect(sdkCheckins())->toHaveCount(1)
+            ->and(sdkCheckins()[0])->toMatchArray(['status' => 'error', 'message' => 'Exited with code 2']);
     });
 });
 
 it('does not call a run that was skipped because the last one is still going ok', function () {
-    $task = emptySchedule()->call(fn () => null)->name('stuck')->everyMinute();
+    $task = sdkEmptySchedule()->call(fn () => null)->name('stuck')->everyMinute();
     $task->skippedBecauseOverlapping = true;
 
     Events::dispatch(new ScheduledTaskStarting($task));
     Events::dispatch(new ScheduledTaskFinished($task, 0.0));
 
-    expect(array_column(checkins(), 'status'))->toBe(['started']);
+    expect(array_column(sdkCheckins(), 'status'))->toBe(['started']);
 });
 
 describe('the monitor name', function () {
     it('is schedule: and the description when there is one', function () {
-        $task = emptySchedule()->exec("'/usr/bin/php' 'artisan' backup:run")->description('Nightly backup');
+        $task = sdkEmptySchedule()->exec("'/usr/bin/php' 'artisan' backup:run")->description('Nightly backup');
 
         expect(app(TaskCheckins::class)->monitorFor($task))->toBe('schedule:Nightly backup');
     });
 
     it('is the command without the PHP binary and artisan', function (string $command, string $expected) {
-        $task = emptySchedule()->exec($command);
+        $task = sdkEmptySchedule()->exec($command);
 
         expect(app(TaskCheckins::class)->monitorFor($task))->toBe("schedule:{$expected}");
     })->with([
@@ -192,19 +192,19 @@ describe('the monitor name', function () {
     ]);
 
     it('is callback for a closure without a name', function () {
-        $task = emptySchedule()->call(fn () => null);
+        $task = sdkEmptySchedule()->call(fn () => null);
 
         expect(app(TaskCheckins::class)->monitorFor($task))->toBe('schedule:callback');
     });
 
     it('is the name given to a closure', function () {
-        $task = emptySchedule()->call(fn () => null)->name('prune-tokens');
+        $task = sdkEmptySchedule()->call(fn () => null)->name('prune-tokens');
 
         expect(app(TaskCheckins::class)->monitorFor($task))->toBe('schedule:prune-tokens');
     });
 
     it('is at most 100 characters', function () {
-        $task = emptySchedule()->call(fn () => null)->name(str_repeat('é', 200));
+        $task = sdkEmptySchedule()->call(fn () => null)->name(str_repeat('é', 200));
         $monitor = app(TaskCheckins::class)->monitorFor($task);
 
         expect(mb_strlen($monitor))->toBe(100)
@@ -214,7 +214,7 @@ describe('the monitor name', function () {
 
 describe('the expected interval', function () {
     it('is the time between the next two runs of the cron expression', function (string $method, array $arguments, int $seconds) {
-        $task = emptySchedule()->call(fn () => null)->name('t')->{$method}(...$arguments);
+        $task = sdkEmptySchedule()->call(fn () => null)->name('t')->{$method}(...$arguments);
 
         expect(app(TaskCheckins::class)->intervalFor($task))->toBe($seconds);
     })->with([
@@ -231,24 +231,24 @@ describe('the expected interval', function () {
     ]);
 
     it('is never below 60 seconds', function () {
-        $task = emptySchedule()->call(fn () => null)->name('t')->everySecond();
+        $task = sdkEmptySchedule()->call(fn () => null)->name('t')->everySecond();
 
         expect(app(TaskCheckins::class)->intervalFor($task))->toBe(60);
     });
 
     it('is never above 31 days', function () {
-        $task = emptySchedule()->call(fn () => null)->name('t')->yearly();
+        $task = sdkEmptySchedule()->call(fn () => null)->name('t')->yearly();
 
         expect(app(TaskCheckins::class)->intervalFor($task))->toBe(2_678_400);
     });
 
     it('is left out when the expression cannot be read, and the task is still reported', function () {
-        $task = emptySchedule()->call(fn () => null)->name('odd')->cron('not a cron');
+        $task = sdkEmptySchedule()->call(fn () => null)->name('odd')->cron('not a cron');
 
         Events::dispatch(new ScheduledTaskStarting($task));
 
-        expect(checkins())->toHaveCount(1)
-            ->and(checkins()[0])->not->toHaveKey('expectedIntervalS');
+        expect(sdkCheckins())->toHaveCount(1)
+            ->and(sdkCheckins()[0])->not->toHaveKey('expectedIntervalS');
     });
 });
 
@@ -259,16 +259,16 @@ describe('what is not reported', function () {
         Events::dispatch(new ScheduledTaskStarting($own));
         Events::dispatch(new ScheduledTaskFinished($own, 0.1));
 
-        expect(checkins())->toBe([]);
+        expect(sdkCheckins())->toBe([]);
     });
 
     it('is a task named in checkins.ignore, by name or command, with wildcards', function (string $pattern) {
         config()->set('sidetower.checkins.ignore', [$pattern]);
-        $task = emptySchedule()->exec("'/usr/bin/php' 'artisan' telescope:prune --hours=48")->daily();
+        $task = sdkEmptySchedule()->exec("'/usr/bin/php' 'artisan' telescope:prune --hours=48")->daily();
 
         Events::dispatch(new ScheduledTaskStarting($task));
 
-        expect(checkins())->toBe([]);
+        expect(sdkCheckins())->toBe([]);
     })->with([
         'the name' => ['telescope:prune --hours=48'],
         'the monitor' => ['schedule:telescope:prune --hours=48'],
@@ -278,59 +278,59 @@ describe('what is not reported', function () {
 
     it('is not a task that the ignore list does not match', function () {
         config()->set('sidetower.checkins.ignore', ['telescope', 'prune', 'schedule:telescope', 'cache:*']);
-        $task = emptySchedule()->exec("'/usr/bin/php' 'artisan' telescope:prune --hours=48")->daily();
+        $task = sdkEmptySchedule()->exec("'/usr/bin/php' 'artisan' telescope:prune --hours=48")->daily();
 
         Events::dispatch(new ScheduledTaskStarting($task));
 
-        expect(array_column(checkins(), 'monitor'))->toBe(['schedule:telescope:prune --hours=48']);
+        expect(array_column(sdkCheckins(), 'monitor'))->toBe(['schedule:telescope:prune --hours=48']);
     });
 
     it('is a described task named in checkins.ignore', function () {
         config()->set('sidetower.checkins.ignore', ['Pruning']);
-        $task = emptySchedule()->exec('x')->description('Pruning');
+        $task = sdkEmptySchedule()->exec('x')->description('Pruning');
 
         Events::dispatch(new ScheduledTaskStarting($task));
 
-        expect(checkins())->toBe([]);
+        expect(sdkCheckins())->toBe([]);
     });
 
     it('is anything while checkins.scheduled_tasks is off', function () {
         config()->set('sidetower.checkins.scheduled_tasks', false);
-        emptySchedule()->call(fn () => null)->name('nightly')->everyMinute();
+        sdkEmptySchedule()->call(fn () => null)->name('nightly')->everyMinute();
 
         $this->artisan('schedule:run');
 
-        expect(checkins())->toBe([]);
+        expect(sdkCheckins())->toBe([]);
     });
 
     it('is anything while the SDK is off', function () {
         config()->set('sidetower.enabled', false);
-        emptySchedule()->call(fn () => null)->name('nightly')->everyMinute();
+        sdkEmptySchedule()->call(fn () => null)->name('nightly')->everyMinute();
 
         $this->artisan('schedule:run');
 
-        expect(checkins())->toBe([]);
+        expect(sdkCheckins())->toBe([]);
     });
 
     it('leaves the other tasks alone', function () {
         config()->set('sidetower.checkins.ignore', ['ignored']);
-        $schedule = emptySchedule();
+        $schedule = sdkEmptySchedule();
         $schedule->call(fn () => null)->name('ignored')->everyMinute();
         $schedule->call(fn () => null)->name('kept')->everyMinute();
 
         $this->artisan('schedule:run');
 
-        expect(array_unique(array_column(checkins(), 'monitor')))->toBe(['schedule:kept']);
+        expect(array_unique(array_column(sdkCheckins(), 'monitor')))->toBe(['schedule:kept']);
     });
 });
 
 it('never throws into the scheduler', function () {
-    useStore('down');
-    $task = emptySchedule()->call(fn () => null)->name('nightly')->everyMinute();
+    sdkUseStore('down');
+    $task = sdkEmptySchedule()->call(fn () => null)->name('nightly')->everyMinute();
 
     Events::dispatch(new ScheduledTaskStarting($task));
     Events::dispatch(new ScheduledTaskFinished($task, 0.1));
     Events::dispatch(new ScheduledTaskFailed($task, new RuntimeException('x')));
 
-    expect(sidetower()->pending())->not->toBeEmpty();
+    expect(sdk()->pending())->not->toBeEmpty();
 });

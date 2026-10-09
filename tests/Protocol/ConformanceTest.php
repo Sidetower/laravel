@@ -24,9 +24,9 @@ require_once __DIR__.'/../Support/helpers.php';
  * held against the schema; the valid fixtures are held against it too, which proves the schema copy and the checker work.
  */
 
-const PROTOCOL_BASE = 'https://schema.sidetower.test/v1/';
+const SDK_PROTOCOL_BASE = 'https://schema.sidetower.test/v1/';
 
-function protocolValidator(): Validator
+function sdkProtocolValidator(): Validator
 {
     static $validator = null;
 
@@ -36,7 +36,7 @@ function protocolValidator(): Validator
 
         foreach (['common', 'item', 'envelope', 'import'] as $name) {
             $schema = json_decode(file_get_contents(__DIR__."/schema/v1/{$name}.json"));
-            $schema->{'$id'} = PROTOCOL_BASE."{$name}.json";
+            $schema->{'$id'} = SDK_PROTOCOL_BASE."{$name}.json";
             $validator->resolver()->registerRaw($schema);
         }
     }
@@ -47,9 +47,9 @@ function protocolValidator(): Validator
 /**
  * Why a request does not fit the schema; null when it does.
  */
-function schemaViolation(mixed $request, string $schema = 'envelope'): ?string
+function sdkSchemaViolation(mixed $request, string $schema = 'envelope'): ?string
 {
-    $result = protocolValidator()->validate($request, PROTOCOL_BASE."{$schema}.json");
+    $result = sdkProtocolValidator()->validate($request, SDK_PROTOCOL_BASE."{$schema}.json");
 
     return $result->isValid() ? null : json_encode((new ErrorFormatter)->format($result->error()), JSON_PRETTY_PRINT);
 }
@@ -57,7 +57,7 @@ function schemaViolation(mixed $request, string $schema = 'envelope'): ?string
 /**
  * The body of a request as the server would read it: gunzipped, with objects kept as objects.
  */
-function wireBody(Request $request): object
+function sdkWireBody(Request $request): object
 {
     return json_decode((string) gzdecode($request->body()), flags: JSON_THROW_ON_ERROR);
 }
@@ -65,28 +65,28 @@ function wireBody(Request $request): object
 /**
  * @return list<string>
  */
-function fixtureFiles(string $directory): array
+function sdkFixtureFiles(string $directory): array
 {
     $files = glob(__DIR__."/fixtures/v1/{$directory}/*.json");
 
     return $files === false ? [] : $files;
 }
 
-function fixtureDataset(string $directory): array
+function sdkFixtureDataset(string $directory): array
 {
     $dataset = [];
 
-    foreach (fixtureFiles($directory) as $file) {
+    foreach (sdkFixtureFiles($directory) as $file) {
         $dataset[basename($file, '.json')] = [$file];
     }
 
     return $dataset;
 }
 
-function expectEveryRequestToFit(): void
+function sdkExpectEveryRequestToFit(): void
 {
     Http::assertSent(function (Request $request) {
-        expect(schemaViolation(wireBody($request)))->toBeNull();
+        expect(sdkSchemaViolation(sdkWireBody($request)))->toBeNull();
 
         return true;
     });
@@ -98,30 +98,30 @@ beforeEach(function () {
 
 describe('the copies', function () {
     it('are there', function () {
-        expect(fixtureFiles('valid'))->not->toBeEmpty()
-            ->and(fixtureFiles('invalid'))->not->toBeEmpty()
-            ->and(fixtureFiles('import/valid'))->not->toBeEmpty()
+        expect(sdkFixtureFiles('valid'))->not->toBeEmpty()
+            ->and(sdkFixtureFiles('invalid'))->not->toBeEmpty()
+            ->and(sdkFixtureFiles('import/valid'))->not->toBeEmpty()
             ->and(is_file(__DIR__.'/schema/v1/envelope.json'))->toBeTrue();
     });
 
     it('hold fixtures that the schema accepts when they are valid', function (string $file) {
         $fixture = json_decode(file_get_contents($file));
 
-        expect(schemaViolation($fixture->request))->toBeNull();
-    })->with(fixtureDataset('valid'));
+        expect(sdkSchemaViolation($fixture->request))->toBeNull();
+    })->with(sdkFixtureDataset('valid'));
 
     it('hold import fixtures that the import schema accepts when they are valid', function (string $file) {
         $fixture = json_decode(file_get_contents($file));
 
-        expect(schemaViolation($fixture->request, 'import'))->toBeNull();
-    })->with(fixtureDataset('import/valid'));
+        expect(sdkSchemaViolation($fixture->request, 'import'))->toBeNull();
+    })->with(sdkFixtureDataset('import/valid'));
 
     it('hold invalid fixtures that the schema rejects when the schema can tell', function (string $file) {
         $fixture = json_decode(file_get_contents($file));
 
-        expect(schemaViolation($fixture->request))->not->toBeNull();
+        expect(sdkSchemaViolation($fixture->request))->not->toBeNull();
     })->with(array_filter(
-        fixtureDataset('invalid'),
+        sdkFixtureDataset('invalid'),
         fn (string $name) => preg_match('/^(invalid_envelope|invalid_item|unknown_type|unsupported_protocol|mixed)__/', $name) === 1,
         ARRAY_FILTER_USE_KEY,
     ));
@@ -147,7 +147,7 @@ describe('the limits in the code', function () {
     it('make ids the protocol accepts', function () use ($common) {
         $pattern = '/'.$common()['$defs']['id']['pattern'].'/';
 
-        expect(preg_match($pattern, sidetower()->newId()))->toBe(1);
+        expect(preg_match($pattern, sdk()->newId()))->toBe(1);
     });
 
     it('keep the expected interval inside the protocol\'s range', function () use ($item) {
@@ -160,24 +160,24 @@ describe('the limits in the code', function () {
 
 describe('what the SDK sends', function () {
     beforeEach(function () {
-        fakeServer();
+        sdkFakeServer();
     });
 
     it('is an envelope the schema accepts, for a run of sidetower:send', function () {
-        checkout('ref: refs/heads/main', ['refs/heads/main' => 'a1b2c3d4e5f60718293a4b5c6d7e8f9012345678']);
+        sdkCheckout('ref: refs/heads/main', ['refs/heads/main' => 'a1b2c3d4e5f60718293a4b5c6d7e8f9012345678']);
 
         $this->artisan('sidetower:send')->assertSuccessful();
 
         Http::assertSentCount(1);
-        expectEveryRequestToFit();
+        sdkExpectEveryRequestToFit();
 
-        $types = collect(wireBody(Http::recorded()->first()[0])->items)->pluck('type')->all();
+        $types = collect(sdkWireBody(Http::recorded()->first()[0])->items)->pluck('type')->all();
 
         expect($types)->toBe(['health.snapshot', 'checkin', 'deploy']);
     });
 
     it('is an envelope the schema accepts, with every item type the SDK makes itself', function () {
-        checkout('ref: refs/heads/feature/billing', ['refs/heads/feature/billing' => 'a1b2c3d4e5f60718293a4b5c6d7e8f9012345678']);
+        sdkCheckout('ref: refs/heads/feature/billing', ['refs/heads/feature/billing' => 'a1b2c3d4e5f60718293a4b5c6d7e8f9012345678']);
         config()->set('sidetower.release', '2026.10.09-1');
         Cache::put(Buffer::DROPPED, 7);
 
@@ -188,9 +188,9 @@ describe('what the SDK sends', function () {
 
         $this->artisan('sidetower:send')->assertSuccessful();
 
-        expectEveryRequestToFit();
+        sdkExpectEveryRequestToFit();
 
-        $types = collect(Http::recorded())->flatMap(fn (array $pair) => wireBody($pair[0])->items)->pluck('type')->unique()->sort()->values()->all();
+        $types = collect(Http::recorded())->flatMap(fn (array $pair) => sdkWireBody($pair[0])->items)->pluck('type')->unique()->sort()->values()->all();
 
         expect($types)->toBe(['checkin', 'deploy', 'health.snapshot', 'metric']);
     });
@@ -209,11 +209,11 @@ describe('what the SDK sends', function () {
 
         $this->artisan('sidetower:test')->assertSuccessful();
 
-        expectEveryRequestToFit();
+        sdkExpectEveryRequestToFit();
 
-        $monitors = collect(wireBody(Http::recorded()->first()[0])->items)->where('type', 'checkin')->pluck('monitor')->unique()->values()->all();
+        $monitors = collect(sdkWireBody(Http::recorded()->first()[0])->items)->where('type', 'checkin')->pluck('monitor')->unique()->values()->all();
 
-        $statuses = collect(wireBody(Http::recorded()->first()[0])->items)->where('type', 'checkin')->pluck('status')->unique()->sort()->values()->all();
+        $statuses = collect(sdkWireBody(Http::recorded()->first()[0])->items)->where('type', 'checkin')->pluck('status')->unique()->sort()->values()->all();
 
         expect($monitors)->toContain('schedule:ok-task')->toContain('sidetower:test')
             ->and($statuses)->toBe(['error', 'ok', 'started']);
@@ -222,7 +222,7 @@ describe('what the SDK sends', function () {
     it('is an envelope the schema accepts, for every item of every valid fixture', function () {
         $items = [];
 
-        foreach (fixtureFiles('valid') as $file) {
+        foreach (sdkFixtureFiles('valid') as $file) {
             $fixture = json_decode(file_get_contents($file), true);
 
             foreach ($fixture['request']['items'] as $item) {
@@ -234,31 +234,31 @@ describe('what the SDK sends', function () {
 
         $drain = app(Sender::class)->drain();
 
-        expectEveryRequestToFit();
+        sdkExpectEveryRequestToFit();
         expect($drain->requests)->toBeGreaterThan(0)
             ->and($drain->sent)->toBe(count($items));
     });
 
     it('is an envelope the schema accepts when it holds 500 items', function () {
-        fillBuffer(500);
+        sdkFillBuffer(500);
 
         app(Sender::class)->drain();
 
-        expectEveryRequestToFit();
+        sdkExpectEveryRequestToFit();
 
-        expect(count(wireBody(Http::recorded()->first()[0])->items))->toBe(500);
+        expect(count(sdkWireBody(Http::recorded()->first()[0])->items))->toBe(500);
     });
 
     it('is an envelope the schema accepts without a release, and in another environment', function () {
         app()->setBasePath(sys_get_temp_dir());
         config()->set('sidetower.environment', 'staging-2');
-        fillBuffer(1);
+        sdkFillBuffer(1);
 
         app(Sender::class)->drain();
 
-        expectEveryRequestToFit();
+        sdkExpectEveryRequestToFit();
 
-        $body = wireBody(Http::recorded()->first()[0]);
+        $body = sdkWireBody(Http::recorded()->first()[0]);
 
         expect($body->source)->not->toHaveProperty('release')
             ->and($body->source->environment)->toBe('staging-2')

@@ -16,7 +16,7 @@ it('records in memory, whether or not a key is set', function () {
     config()->set('sidetower.enabled', null);
 
     $fake = Sidetower::fake();
-    Sidetower::record(aCheckin('nightly'));
+    Sidetower::record(sdkCheckinItem('nightly'));
 
     expect($fake)->toBeInstanceOf(SidetowerFake::class)
         ->and($fake->recorded())->toHaveCount(1)
@@ -26,7 +26,7 @@ it('records in memory, whether or not a key is set', function () {
 
 it('fills the id and the timestamp like the real one', function () {
     $fake = Sidetower::fake();
-    Sidetower::record(aCheckin());
+    Sidetower::record(sdkCheckinItem());
 
     expect($fake->recorded()[0]['id'])->toMatch('/^[0-9a-z]{26}$/')
         ->and($fake->recorded()[0]['ts'])->toMatch('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/');
@@ -34,9 +34,9 @@ it('fills the id and the timestamp like the real one', function () {
 
 it('lists what was recorded, all of it or by type', function () {
     $fake = Sidetower::fake();
-    Sidetower::record(aCheckin('a'));
+    Sidetower::record(sdkCheckinItem('a'));
     Sidetower::record(['type' => 'metric', 'name' => 'x', 'kind' => 'counter', 'value' => 1]);
-    Sidetower::record(aCheckin('b'));
+    Sidetower::record(sdkCheckinItem('b'));
 
     expect($fake->recorded())->toHaveCount(3)
         ->and(array_column($fake->recorded('checkin'), 'monitor'))->toBe(['a', 'b'])
@@ -47,22 +47,22 @@ it('lists what was recorded, all of it or by type', function () {
 describe('assertRecorded', function () {
     it('passes for a type that was recorded', function () {
         Sidetower::fake();
-        Sidetower::record(aCheckin());
+        Sidetower::record(sdkCheckinItem());
 
         Sidetower::assertRecorded('checkin');
     });
 
     it('fails for a type that was not, and says what was', function () {
         Sidetower::fake();
-        Sidetower::record(aCheckin());
-        Sidetower::record(aCheckin());
+        Sidetower::record(sdkCheckinItem());
+        Sidetower::record(sdkCheckinItem());
 
         expect(fn () => Sidetower::assertRecorded('deploy'))->toThrow(ExpectationFailedException::class, 'The expected [deploy] item was not recorded. Recorded: checkin x2.');
     });
 
     it('takes a filter on the item', function () {
         Sidetower::fake();
-        Sidetower::record(aCheckin('nightly', 'error'));
+        Sidetower::record(sdkCheckinItem('nightly', 'error'));
 
         Sidetower::assertRecorded('checkin', fn (array $item) => $item['status'] === 'error' && $item['monitor'] === 'nightly');
 
@@ -80,21 +80,21 @@ describe('assertRecorded', function () {
 describe('assertNotRecorded', function () {
     it('passes when the type was not recorded', function () {
         Sidetower::fake();
-        Sidetower::record(aCheckin());
+        Sidetower::record(sdkCheckinItem());
 
         Sidetower::assertNotRecorded('deploy');
     });
 
     it('fails when it was', function () {
         Sidetower::fake();
-        Sidetower::record(aCheckin());
+        Sidetower::record(sdkCheckinItem());
 
         expect(fn () => Sidetower::assertNotRecorded('checkin'))->toThrow(ExpectationFailedException::class);
     });
 
     it('takes a filter', function () {
         Sidetower::fake();
-        Sidetower::record(aCheckin('nightly', 'ok'));
+        Sidetower::record(sdkCheckinItem('nightly', 'ok'));
 
         Sidetower::assertNotRecorded('checkin', fn (array $item) => $item['status'] === 'error');
 
@@ -111,7 +111,7 @@ describe('assertNothingRecorded', function () {
 
     it('fails when something was recorded', function () {
         Sidetower::fake();
-        Sidetower::record(aCheckin());
+        Sidetower::record(sdkCheckinItem());
 
         expect(fn () => Sidetower::assertNothingRecorded())->toThrow(ExpectationFailedException::class, 'Recorded: checkin x1.');
     });
@@ -121,7 +121,7 @@ it('catches what code recorded through a manager it had resolved before the fake
     $held = app(\Sidetower\Laravel\Sidetower::class);
 
     $fake = Sidetower::fake();
-    $held->record(aCheckin('from a held instance'));
+    $held->record(sdkCheckinItem('from a held instance'));
 
     Sidetower::assertRecorded('checkin', fn (array $item) => $item['monitor'] === 'from a held instance');
     expect($held->pending())->toBe($fake->pending())
@@ -132,10 +132,10 @@ it('starts empty each time it is called, and the latest one gets everything', fu
     $held = app(\Sidetower\Laravel\Sidetower::class);
 
     $first = Sidetower::fake();
-    Sidetower::record(aCheckin('one'));
+    Sidetower::record(sdkCheckinItem('one'));
 
     $second = Sidetower::fake();
-    $held->record(aCheckin('two'));
+    $held->record(sdkCheckinItem('two'));
 
     expect($first->recorded())->toHaveCount(1)
         ->and(array_column($second->recorded(), 'monitor'))->toBe(['two']);
@@ -144,12 +144,12 @@ it('starts empty each time it is called, and the latest one gets everything', fu
 it('writes nothing to the buffer and sends nothing', function () {
     Http::fake();
     Sidetower::fake();
-    Sidetower::record(aCheckin());
+    Sidetower::record(sdkCheckinItem());
 
     app()->terminate();
     $this->artisan('sidetower:send')->assertSuccessful();
 
-    expect(buffered())->toBe([]);
+    expect(sdkBuffered())->toBe([]);
     Http::assertNothingSent();
 });
 
