@@ -3,7 +3,7 @@
 All notable changes to `sidetower/laravel` are written here. The format follows [Keep a Changelog](https://keepachangelog.com),
 and the package follows [semantic versioning](https://semver.org). It speaks protocol 1.
 
-## [0.1.0] - Unreleased
+## [0.1.0] - 2026-10-09
 
 First release.
 
