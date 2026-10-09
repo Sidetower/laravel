@@ -115,7 +115,7 @@ The parsers pick numbers and the model name out of a response and never copy tex
 
 ## Streams
 
-A streamed response cannot be read without consuming it, so a call made with the `stream` option is recorded **without tokens** (`status: ok`, the model from the request). Prism's `asStream()` and `laravel/ai`'s `stream()` work this way. A response that was fully buffered before your code saw it (a faked response, a server that ignores `stream`) is read, and the last `usage` the event stream carried is used.
+A streamed response cannot be read without consuming it, so a call made with the `stream` option is recorded **without tokens** and without a duration (`status: ok`, the model from the request; Guzzle's statistics of a live stream only cover the wait for its first bytes). Prism's `asStream()` and `laravel/ai`'s `stream()` work this way. A response that was fully buffered before your code saw it (a faked response, a server that ignores `stream`) is read, and the last `usage` the event stream carried is used.
 
 If you need tokens for streamed calls, record them yourself from the library's final event, and switch the token-less items off so a call is not counted twice:
 
