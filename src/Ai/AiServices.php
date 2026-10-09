@@ -8,11 +8,15 @@ use Illuminate\Console\Events\CommandFinished;
 use Illuminate\Console\Events\CommandStarting;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Http\Client\Events\ConnectionFailed;
+use Illuminate\Http\Client\Events\ResponseReceived;
 use Illuminate\Queue\Events\JobAttempted;
 use Illuminate\Queue\Events\JobExceptionOccurred;
 use Illuminate\Queue\Events\JobFailed;
 use Illuminate\Queue\Events\JobProcessed;
 use Illuminate\Queue\Events\JobProcessing;
+use Sidetower\Laravel\Ai\Http\HttpCapture;
+use Sidetower\Laravel\Ai\Http\ProviderRegistry;
 use Throwable;
 
 /**
@@ -28,6 +32,8 @@ class AiServices
     {
         $app->singleton(OperationResolver::class);
         $app->singleton(AiUsage::class);
+        $app->singleton(ProviderRegistry::class);
+        $app->singleton(HttpCapture::class);
     }
 
     public static function boot(Application $app): void
@@ -35,6 +41,7 @@ class AiServices
         $events = $app->make(Dispatcher::class);
 
         static::listenForOperationNames($app, $events);
+        static::listenForHttpCalls($app, $events);
     }
 
     /**
@@ -60,6 +67,16 @@ class AiServices
 
         $events->listen(CommandStarting::class, static::safely(fn (CommandStarting $event) => $resolver()->commandStarted($event->command)));
         $events->listen(CommandFinished::class, static::safely(fn (CommandFinished $event) => $resolver()->commandFinished($event->command)));
+    }
+
+    /**
+     * The Http client's events, for `ai.http`. The capture checks the switch and the host itself, on every event, so the
+     * config can change after boot.
+     */
+    protected static function listenForHttpCalls(Application $app, Dispatcher $events): void
+    {
+        $events->listen(ResponseReceived::class, static::safely(fn (ResponseReceived $event) => $app->make(HttpCapture::class)->responseReceived($event)));
+        $events->listen(ConnectionFailed::class, static::safely(fn (ConnectionFailed $event) => $app->make(HttpCapture::class)->connectionFailed($event)));
     }
 
     /**
