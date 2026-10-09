@@ -1,0 +1,32 @@
+{
+  "description": "An id has at most 64 characters.",
+  "key": {
+    "kind": "secret",
+    "environment": "production"
+  },
+  "request": {
+    "protocol": 1,
+    "sdk": {
+      "name": "laravel",
+      "version": "0.1.0"
+    },
+    "sentAt": "2026-10-09T18:00:00Z",
+    "items": [
+      {
+        "type": "event",
+        "id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "ts": "2026-10-09T17:59:30Z",
+        "name": "paywall_viewed"
+      }
+    ]
+  },
+  "expect": {
+    "accepted": 0,
+    "rejected": [
+      {
+        "index": 0,
+        "error": "invalid_item"
+      }
+    ]
+  }
+}

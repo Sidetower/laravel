@@ -1,0 +1,45 @@
+{
+  "description": "A scheduler heartbeat: started, then ok with a duration and the expected interval, then a failing command with a message.",
+  "key": {
+    "kind": "secret",
+    "environment": "production"
+  },
+  "request": {
+    "protocol": 1,
+    "sdk": {
+      "name": "laravel",
+      "version": "0.1.0"
+    },
+    "sentAt": "2026-10-09T18:00:00Z",
+    "items": [
+      {
+        "type": "checkin",
+        "id": "ci-0003",
+        "ts": "2026-10-09T17:59:30Z",
+        "monitor": "command:backup:run",
+        "status": "started"
+      },
+      {
+        "type": "checkin",
+        "id": "ci-0004",
+        "ts": "2026-10-09T17:59:30Z",
+        "monitor": "command:backup:run",
+        "status": "ok",
+        "durationMs": 5230,
+        "expectedIntervalS": 86400
+      },
+      {
+        "type": "checkin",
+        "id": "ci-0005",
+        "ts": "2026-10-09T17:59:30Z",
+        "monitor": "queue:default",
+        "status": "error",
+        "message": "worker stopped responding"
+      }
+    ]
+  },
+  "expect": {
+    "accepted": 3,
+    "rejected": []
+  }
+}

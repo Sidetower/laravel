@@ -1,0 +1,30 @@
+{
+  "description": "A request signed with a key of the staging environment whose source.environment says the same.",
+  "key": {
+    "kind": "secret",
+    "environment": "staging"
+  },
+  "request": {
+    "protocol": 1,
+    "sdk": {
+      "name": "laravel",
+      "version": "0.1.0"
+    },
+    "sentAt": "2026-10-09T18:00:00Z",
+    "items": [
+      {
+        "type": "deploy",
+        "id": "dp-0035",
+        "ts": "2026-10-09T17:59:30Z",
+        "release": "2026.10.09-1"
+      }
+    ],
+    "source": {
+      "environment": "staging"
+    }
+  },
+  "expect": {
+    "accepted": 1,
+    "rejected": []
+  }
+}

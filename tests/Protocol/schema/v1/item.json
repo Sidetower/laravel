@@ -1,0 +1,148 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "item.json",
+  "title": "Protocol v1: one item",
+  "description": "'x-keys' lists the key kinds that may send the type: sk = secret key, pk = publishable key. A type sent with the wrong kind is refused as type_not_allowed. Each item is also at most 16 KiB of JSON, which a schema cannot express. Fields not listed here are ignored by the server.",
+  "oneOf": [
+    { "$ref": "#/$defs/health.snapshot" },
+    { "$ref": "#/$defs/checkin" },
+    { "$ref": "#/$defs/ai.usage" },
+    { "$ref": "#/$defs/deploy" },
+    { "$ref": "#/$defs/metric" },
+    { "$ref": "#/$defs/install.active" },
+    { "$ref": "#/$defs/web.vital" },
+    { "$ref": "#/$defs/event" }
+  ],
+  "$defs": {
+    "health.snapshot": {
+      "x-keys": ["sk"],
+      "type": "object",
+      "required": ["type", "id", "ts", "report"],
+      "properties": {
+        "type": { "const": "health.snapshot" },
+        "id": { "$ref": "common.json#/$defs/id" },
+        "ts": { "$ref": "common.json#/$defs/timestamp" },
+        "report": {
+          "description": "The server health report (docs/sozlesmeler.md, section 1) as is. Only 'schema' is required here; every other section may be missing or null.",
+          "type": "object",
+          "required": ["schema"],
+          "properties": { "schema": { "const": 1 } }
+        }
+      }
+    },
+    "checkin": {
+      "x-keys": ["sk"],
+      "type": "object",
+      "required": ["type", "id", "ts", "monitor", "status"],
+      "properties": {
+        "type": { "const": "checkin" },
+        "id": { "$ref": "common.json#/$defs/id" },
+        "ts": { "$ref": "common.json#/$defs/timestamp" },
+        "monitor": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "status": { "enum": ["ok", "error", "started"] },
+        "durationMs": { "$ref": "common.json#/$defs/nonNegativeInteger" },
+        "expectedIntervalS": { "type": "integer", "minimum": 60, "maximum": 2678400 },
+        "message": { "type": "string", "minLength": 1, "maxLength": 500 }
+      }
+    },
+    "ai.usage": {
+      "x-keys": ["sk"],
+      "type": "object",
+      "required": ["type", "id", "ts", "operation", "provider", "model", "status"],
+      "properties": {
+        "type": { "const": "ai.usage" },
+        "id": { "$ref": "common.json#/$defs/id" },
+        "ts": { "$ref": "common.json#/$defs/timestamp" },
+        "operation": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "provider": { "type": "string", "minLength": 1, "maxLength": 40 },
+        "model": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "status": { "enum": ["ok", "error", "invalid_response"] },
+        "inputTokens": { "$ref": "common.json#/$defs/nonNegativeInteger" },
+        "outputTokens": { "$ref": "common.json#/$defs/nonNegativeInteger" },
+        "cacheReadTokens": { "$ref": "common.json#/$defs/nonNegativeInteger" },
+        "cacheWriteTokens": { "$ref": "common.json#/$defs/nonNegativeInteger" },
+        "units": { "$ref": "common.json#/$defs/nonNegativeNumber" },
+        "unitType": { "type": "string", "minLength": 1, "maxLength": 20 },
+        "reportedCostUsd": { "$ref": "common.json#/$defs/nonNegativeNumber" },
+        "durationMs": { "$ref": "common.json#/$defs/nonNegativeInteger" },
+        "attributes": { "$ref": "common.json#/$defs/attributes" }
+      }
+    },
+    "deploy": {
+      "x-keys": ["sk"],
+      "type": "object",
+      "required": ["type", "id", "ts", "release"],
+      "properties": {
+        "type": { "const": "deploy" },
+        "id": { "$ref": "common.json#/$defs/id" },
+        "ts": { "$ref": "common.json#/$defs/timestamp" },
+        "release": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "commit": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "branch": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "runtimeVersion": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "updateId": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "channel": { "type": "string", "minLength": 1, "maxLength": 100 }
+      }
+    },
+    "metric": {
+      "x-keys": ["sk"],
+      "type": "object",
+      "required": ["type", "id", "ts", "name", "kind", "value"],
+      "properties": {
+        "type": { "const": "metric" },
+        "id": { "$ref": "common.json#/$defs/id" },
+        "ts": { "$ref": "common.json#/$defs/timestamp" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "kind": { "enum": ["counter", "gauge", "distribution"] },
+        "value": { "type": "number" },
+        "tags": { "$ref": "common.json#/$defs/tags" }
+      }
+    },
+    "install.active": {
+      "x-keys": ["sk", "pk"],
+      "type": "object",
+      "required": ["type", "id", "ts", "installId", "version", "platform"],
+      "properties": {
+        "type": { "const": "install.active" },
+        "id": { "$ref": "common.json#/$defs/id" },
+        "ts": { "$ref": "common.json#/$defs/timestamp" },
+        "installId": { "$ref": "common.json#/$defs/uuid" },
+        "version": { "type": "string", "minLength": 1, "maxLength": 40 },
+        "build": { "type": "string", "minLength": 1, "maxLength": 40 },
+        "runtimeVersion": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "updateId": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "platform": { "type": "string", "minLength": 1, "maxLength": 20 },
+        "osVersion": { "type": "string", "minLength": 1, "maxLength": 40 },
+        "locale": { "type": "string", "minLength": 1, "maxLength": 20 }
+      }
+    },
+    "web.vital": {
+      "x-keys": ["sk", "pk"],
+      "type": "object",
+      "required": ["type", "id", "ts", "name", "value", "path"],
+      "properties": {
+        "type": { "const": "web.vital" },
+        "id": { "$ref": "common.json#/$defs/id" },
+        "ts": { "$ref": "common.json#/$defs/timestamp" },
+        "name": { "enum": ["LCP", "INP", "CLS", "FCP", "TTFB"] },
+        "value": { "$ref": "common.json#/$defs/nonNegativeNumber" },
+        "path": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "rating": { "enum": ["good", "needs-improvement", "poor"] },
+        "navigationType": { "type": "string", "minLength": 1, "maxLength": 20 }
+      }
+    },
+    "event": {
+      "x-keys": ["sk", "pk"],
+      "type": "object",
+      "required": ["type", "id", "ts", "name"],
+      "properties": {
+        "type": { "const": "event" },
+        "id": { "$ref": "common.json#/$defs/id" },
+        "ts": { "$ref": "common.json#/$defs/timestamp" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "installId": { "$ref": "common.json#/$defs/uuid" },
+        "props": { "$ref": "common.json#/$defs/attributes" }
+      }
+    }
+  }
+}

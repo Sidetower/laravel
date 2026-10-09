@@ -1,0 +1,40 @@
+{
+  "description": "Product events: one tied to an install, one anonymous with props of every allowed value type.",
+  "key": {
+    "kind": "publishable",
+    "environment": "production"
+  },
+  "request": {
+    "protocol": 1,
+    "sdk": {
+      "name": "laravel",
+      "version": "0.1.0"
+    },
+    "sentAt": "2026-10-09T18:00:00Z",
+    "items": [
+      {
+        "type": "event",
+        "id": "ev-0021",
+        "ts": "2026-10-09T17:59:30Z",
+        "name": "paywall_viewed",
+        "installId": "3f0c1c2e-8a4b-4d57-9b0e-5a1f2c3d4e5f",
+        "props": {
+          "plan": "plus",
+          "trial": true,
+          "price": 4.99,
+          "screen": ""
+        }
+      },
+      {
+        "type": "event",
+        "id": "ev-0022",
+        "ts": "2026-10-09T17:59:30Z",
+        "name": "install"
+      }
+    ]
+  },
+  "expect": {
+    "accepted": 2,
+    "rejected": []
+  }
+}

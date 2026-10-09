@@ -1,0 +1,11 @@
+{
+  "description": "The body is a JSON array, not an object.",
+  "key": {
+    "kind": "secret",
+    "environment": "production"
+  },
+  "request": [],
+  "expect": {
+    "error": "invalid_envelope"
+  }
+}

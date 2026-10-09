@@ -1,0 +1,26 @@
+{
+  "description": "sdk.name has 41 characters; the limit is 40.",
+  "key": {
+    "kind": "secret",
+    "environment": "production"
+  },
+  "request": {
+    "protocol": 1,
+    "sdk": {
+      "name": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "version": "1"
+    },
+    "sentAt": "2026-10-09T18:00:00Z",
+    "items": [
+      {
+        "type": "event",
+        "id": "ev-0048",
+        "ts": "2026-10-09T17:59:30Z",
+        "name": "paywall_viewed"
+      }
+    ]
+  },
+  "expect": {
+    "error": "invalid_envelope"
+  }
+}

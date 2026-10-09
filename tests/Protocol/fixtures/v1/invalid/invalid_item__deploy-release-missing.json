@@ -1,0 +1,31 @@
+{
+  "description": "release is required.",
+  "key": {
+    "kind": "secret",
+    "environment": "production"
+  },
+  "request": {
+    "protocol": 1,
+    "sdk": {
+      "name": "laravel",
+      "version": "0.1.0"
+    },
+    "sentAt": "2026-10-09T18:00:00Z",
+    "items": [
+      {
+        "type": "deploy",
+        "id": "dp-0084",
+        "ts": "2026-10-09T17:59:30Z"
+      }
+    ]
+  },
+  "expect": {
+    "accepted": 0,
+    "rejected": [
+      {
+        "index": 0,
+        "error": "invalid_item"
+      }
+    ]
+  }
+}

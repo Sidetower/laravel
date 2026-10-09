@@ -1,0 +1,56 @@
+{
+  "description": "Core Web Vitals of one page view.",
+  "key": {
+    "kind": "publishable",
+    "environment": "production"
+  },
+  "request": {
+    "protocol": 1,
+    "sdk": {
+      "name": "laravel",
+      "version": "0.1.0"
+    },
+    "sentAt": "2026-10-09T18:00:00Z",
+    "items": [
+      {
+        "type": "web.vital",
+        "id": "wv-0017",
+        "ts": "2026-10-09T17:59:30Z",
+        "name": "LCP",
+        "value": 1840.5,
+        "path": "/pricing",
+        "rating": "good",
+        "navigationType": "navigate"
+      },
+      {
+        "type": "web.vital",
+        "id": "wv-0018",
+        "ts": "2026-10-09T17:59:30Z",
+        "name": "CLS",
+        "value": 0.02,
+        "path": "/pricing"
+      },
+      {
+        "type": "web.vital",
+        "id": "wv-0019",
+        "ts": "2026-10-09T17:59:30Z",
+        "name": "INP",
+        "value": 240,
+        "path": "/pricing",
+        "rating": "needs-improvement"
+      },
+      {
+        "type": "web.vital",
+        "id": "wv-0020",
+        "ts": "2026-10-09T17:59:30Z",
+        "name": "TTFB",
+        "value": 0,
+        "path": "/"
+      }
+    ]
+  },
+  "expect": {
+    "accepted": 4,
+    "rejected": []
+  }
+}

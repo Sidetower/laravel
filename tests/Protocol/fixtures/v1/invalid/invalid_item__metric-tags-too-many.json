@@ -1,0 +1,47 @@
+{
+  "description": "At most 10 tags.",
+  "key": {
+    "kind": "secret",
+    "environment": "production"
+  },
+  "request": {
+    "protocol": 1,
+    "sdk": {
+      "name": "laravel",
+      "version": "0.1.0"
+    },
+    "sentAt": "2026-10-09T18:00:00Z",
+    "items": [
+      {
+        "type": "metric",
+        "id": "mt-0086",
+        "ts": "2026-10-09T17:59:30Z",
+        "name": "queue.depth",
+        "kind": "gauge",
+        "value": 12,
+        "tags": {
+          "t0": "x",
+          "t1": "x",
+          "t2": "x",
+          "t3": "x",
+          "t4": "x",
+          "t5": "x",
+          "t6": "x",
+          "t7": "x",
+          "t8": "x",
+          "t9": "x",
+          "t10": "x"
+        }
+      }
+    ]
+  },
+  "expect": {
+    "accepted": 0,
+    "rejected": [
+      {
+        "index": 0,
+        "error": "invalid_item"
+      }
+    ]
+  }
+}

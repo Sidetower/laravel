@@ -1,0 +1,19 @@
+{
+  "description": "items must hold at least one item.",
+  "key": {
+    "kind": "secret",
+    "environment": "production"
+  },
+  "request": {
+    "protocol": 1,
+    "sdk": {
+      "name": "laravel",
+      "version": "0.1.0"
+    },
+    "sentAt": "2026-10-09T18:00:00Z",
+    "items": []
+  },
+  "expect": {
+    "error": "invalid_envelope"
+  }
+}

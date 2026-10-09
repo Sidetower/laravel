@@ -1,0 +1,109 @@
+{
+  "description": "Import takes ai.usage and deploy only. The other six types are refused one by one, even install.active, web.vital and event, which a publishable key may send to /v1/ingest.",
+  "key": {
+    "kind": "secret",
+    "environment": "production"
+  },
+  "request": {
+    "protocol": 1,
+    "sdk": {
+      "name": "laravel",
+      "version": "0.1.0"
+    },
+    "sentAt": "2026-10-09T18:00:00Z",
+    "items": [
+      {
+        "type": "health.snapshot",
+        "id": "hist-ty-0001",
+        "ts": "2026-10-09T17:59:30Z",
+        "report": {
+          "schema": 1,
+          "app": "koreda"
+        }
+      },
+      {
+        "type": "checkin",
+        "id": "hist-ty-0002",
+        "ts": "2026-10-09T17:59:30Z",
+        "monitor": "scheduler",
+        "status": "ok"
+      },
+      {
+        "type": "metric",
+        "id": "hist-ty-0003",
+        "ts": "2026-10-09T17:59:30Z",
+        "name": "queue.depth",
+        "kind": "gauge",
+        "value": 12
+      },
+      {
+        "type": "install.active",
+        "id": "hist-ty-0004",
+        "ts": "2026-10-09T17:59:30Z",
+        "installId": "3f0c1c2e-8a4b-4d57-9b0e-5a1f2c3d4e5f",
+        "version": "1.4.0",
+        "platform": "ios"
+      },
+      {
+        "type": "web.vital",
+        "id": "hist-ty-0005",
+        "ts": "2026-10-09T17:59:30Z",
+        "name": "LCP",
+        "value": 1800,
+        "path": "/"
+      },
+      {
+        "type": "event",
+        "id": "hist-ty-0006",
+        "ts": "2026-10-09T17:59:30Z",
+        "name": "paywall_viewed"
+      },
+      {
+        "type": "ai.usage",
+        "id": "hist-ty-0007",
+        "ts": "2026-06-01T00:00:00Z",
+        "operation": "story.generate",
+        "provider": "openrouter",
+        "model": "google/gemini-2.5-flash",
+        "status": "ok",
+        "inputTokens": 10,
+        "outputTokens": 5
+      },
+      {
+        "type": "deploy",
+        "id": "hist-ty-0008",
+        "ts": "2026-06-01T00:00:00Z",
+        "release": "2026.06.01-1"
+      }
+    ]
+  },
+  "expect": {
+    "accepted": 2,
+    "rejected": [
+      {
+        "index": 0,
+        "error": "type_not_allowed"
+      },
+      {
+        "index": 1,
+        "error": "type_not_allowed"
+      },
+      {
+        "index": 2,
+        "error": "type_not_allowed"
+      },
+      {
+        "index": 3,
+        "error": "type_not_allowed"
+      },
+      {
+        "index": 4,
+        "error": "type_not_allowed"
+      },
+      {
+        "index": 5,
+        "error": "type_not_allowed"
+      }
+    ]
+  }
+}

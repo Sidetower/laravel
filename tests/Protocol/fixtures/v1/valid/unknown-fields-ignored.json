@@ -1,0 +1,47 @@
+{
+  "description": "Fields this version does not know are ignored at every level, so newer SDKs stay compatible with older servers.",
+  "key": {
+    "kind": "secret",
+    "environment": "production"
+  },
+  "request": {
+    "protocol": 1,
+    "sdk": {
+      "name": "laravel",
+      "version": "0.1.0"
+    },
+    "sentAt": "2026-10-09T18:00:00Z",
+    "items": [
+      {
+        "type": "event",
+        "id": "ev-0036",
+        "ts": "2026-10-09T17:59:30Z",
+        "name": "paywall_viewed",
+        "futureField": {
+          "nested": [
+            1,
+            2,
+            3
+          ]
+        }
+      },
+      {
+        "type": "checkin",
+        "id": "ci-0037",
+        "ts": "2026-10-09T17:59:30Z",
+        "monitor": "scheduler",
+        "status": "ok",
+        "extra": true
+      }
+    ],
+    "source": {
+      "host": "srv-1",
+      "datacenter": "fra"
+    },
+    "clientTrace": "abc"
+  },
+  "expect": {
+    "accepted": 2,
+    "rejected": []
+  }
+}

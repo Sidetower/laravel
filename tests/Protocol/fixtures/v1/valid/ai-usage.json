@@ -1,0 +1,63 @@
+{
+  "description": "AI calls: a token-billed chat call with cache figures, an image call billed per unit with the provider-reported cost, and a failed call.",
+  "key": {
+    "kind": "secret",
+    "environment": "production"
+  },
+  "request": {
+    "protocol": 1,
+    "sdk": {
+      "name": "laravel",
+      "version": "0.1.0"
+    },
+    "sentAt": "2026-10-09T18:00:00Z",
+    "items": [
+      {
+        "type": "ai.usage",
+        "id": "ai-0006",
+        "ts": "2026-10-09T17:59:30Z",
+        "operation": "story.generate",
+        "provider": "openrouter",
+        "model": "google/gemini-2.5-flash",
+        "status": "ok",
+        "inputTokens": 1200,
+        "outputTokens": 640,
+        "cacheReadTokens": 800,
+        "cacheWriteTokens": 0,
+        "durationMs": 2310,
+        "reportedCostUsd": 0.00184,
+        "attributes": {
+          "variant": "b",
+          "attempt": 1,
+          "cached": false
+        }
+      },
+      {
+        "type": "ai.usage",
+        "id": "ai-0007",
+        "ts": "2026-10-09T17:59:30Z",
+        "operation": "cover.generate",
+        "provider": "fal",
+        "model": "fal-ai/flux/schnell",
+        "status": "ok",
+        "units": 1,
+        "unitType": "image",
+        "reportedCostUsd": 0.003
+      },
+      {
+        "type": "ai.usage",
+        "id": "ai-0008",
+        "ts": "2026-10-09T17:59:30Z",
+        "operation": "story.generate",
+        "provider": "openrouter",
+        "model": "google/gemini-2.5-flash",
+        "status": "error",
+        "durationMs": 30000
+      }
+    ]
+  },
+  "expect": {
+    "accepted": 3,
+    "rejected": []
+  }
+}
