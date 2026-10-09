@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace Sidetower\Laravel;
 
+use Illuminate\Console\Events\ScheduledBackgroundTaskFinished;
+use Illuminate\Console\Events\ScheduledTaskFailed;
+use Illuminate\Console\Events\ScheduledTaskFinished;
+use Illuminate\Console\Events\ScheduledTaskStarting;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Queue\Events\JobExceptionOccurred;
 use Illuminate\Queue\Events\JobFailed;
@@ -13,6 +17,7 @@ use Illuminate\Support\ServiceProvider;
 use Sidetower\Laravel\Ai\AiServices;
 use Sidetower\Laravel\Console\SendCommand;
 use Sidetower\Laravel\Health\HealthReport;
+use Sidetower\Laravel\Scheduling\TaskCheckins;
 
 class SidetowerServiceProvider extends ServiceProvider
 {
@@ -26,6 +31,7 @@ class SidetowerServiceProvider extends ServiceProvider
         $this->app->singleton(Transport::class);
         $this->app->singleton(HealthReport::class);
         $this->app->singleton(Sender::class);
+        $this->app->singleton(TaskCheckins::class);
 
         AiServices::register($this->app);
     }
@@ -34,6 +40,7 @@ class SidetowerServiceProvider extends ServiceProvider
     {
         $this->registerPersistPoints();
         $this->scheduleSending();
+        $this->listenToScheduledTasks();
 
         if ($this->app->runningInConsole()) {
             $this->publishes([
@@ -84,5 +91,16 @@ class SidetowerServiceProvider extends ServiceProvider
                 ->withoutOverlapping(10)
                 ->when(fn (): bool => app(Sidetower::class)->enabled());
         });
+    }
+
+    /**
+     * Whether a task is reported is decided when it runs (`checkins.scheduled_tasks`), not here.
+     */
+    protected function listenToScheduledTasks(): void
+    {
+        Event::listen(ScheduledTaskStarting::class, [TaskCheckins::class, 'starting']);
+        Event::listen(ScheduledTaskFinished::class, [TaskCheckins::class, 'finished']);
+        Event::listen(ScheduledTaskFailed::class, [TaskCheckins::class, 'failed']);
+        Event::listen(ScheduledBackgroundTaskFinished::class, [TaskCheckins::class, 'backgroundFinished']);
     }
 }
