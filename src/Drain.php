@@ -28,13 +28,14 @@ final class Drain
     public array $attempts = [];
 
     /**
-     * The request that carried this item, and the item's place in it. Null if the item was not sent in this run.
+     * The last request that carried this item (a batch the server found too large is sent again in halves), and the item's
+     * place in it. Null if the item was not sent in this run.
      *
      * @return array{delivery: Delivery, index: int}|null
      */
     public function attemptFor(string $id): ?array
     {
-        foreach ($this->attempts as $attempt) {
+        foreach (array_reverse($this->attempts) as $attempt) {
             $index = array_search($id, $attempt['ids'], true);
 
             if ($index !== false) {

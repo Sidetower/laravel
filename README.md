@@ -70,7 +70,7 @@ php artisan vendor:publish --tag=sidetower-config
 | `environment` | `SIDETOWER_ENVIRONMENT` | `APP_ENV` | Must be the environment the key was made for. Lower-cased. If it is not lower-case letters, digits and hyphens, starting with a letter, at most 20 characters, the SDK stays off and logs one warning. |
 | `release` | `SIDETOWER_RELEASE` | | The name of the release. Unset: the 7-character commit. |
 | `timeout` | `SIDETOWER_TIMEOUT` | `2.0` | Seconds, for connecting and for the whole request. Only `sidetower:send` waits on it. |
-| `buffer.store` | `SIDETOWER_CACHE_STORE` | default store | The cache store that holds the waiting items. |
+| `buffer.store` | `SIDETOWER_CACHE_STORE` | default store | The cache store that holds the waiting items. It must keep them between processes and be the same for web, workers and scheduler: not `array` or `null`. |
 | `buffer.max_items` | | `5000` | When the buffer is full the oldest items are dropped and counted. |
 | `health.enabled` | | `true` | A `health.snapshot` item with every run. |
 | `health.queues` | | `null` | Queues whose pending jobs are counted. `null`: the queues of your Horizon supervisors, else `['default']`. |

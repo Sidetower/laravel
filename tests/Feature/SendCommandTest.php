@@ -108,6 +108,20 @@ describe('the run', function () {
         expect(array_column(buffered(), 'monitor'))->toBe(['scheduler']);
     });
 
+    it('warns when the buffer is in a store that forgets between processes', function () {
+        fakeServer();
+
+        $this->artisan('sidetower:send')->expectsOutputToContain('does not keep items between processes')->assertSuccessful();
+    });
+
+    it('does not warn about a store that keeps items', function () {
+        fakeServer();
+        config()->set('cache.stores.files', ['driver' => 'file', 'path' => sys_get_temp_dir().'/sidetower-cache-'.bin2hex(random_bytes(3))]);
+        config()->set('sidetower.buffer.store', 'files');
+
+        $this->artisan('sidetower:send')->doesntExpectOutputToContain('does not keep items')->assertSuccessful();
+    });
+
     it('succeeds when the cache is down', function () {
         fakeServer();
         useStore('down');

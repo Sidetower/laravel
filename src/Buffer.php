@@ -45,6 +45,18 @@ class Buffer
         return Cache::store(is_string($name) && $name !== '' ? $name : null);
     }
 
+    /**
+     * Whether the store keeps items between processes. The `array` and `null` stores do not: items recorded by web requests
+     * would never reach the command that sends them.
+     */
+    public function persistent(): bool
+    {
+        $configured = config('sidetower.buffer.store');
+        $name = is_string($configured) && $configured !== '' ? $configured : config('cache.default');
+
+        return ! in_array(config("cache.stores.{$name}.driver"), ['array', 'null'], true);
+    }
+
     public function max(): int
     {
         return max(1, (int) config('sidetower.buffer.max_items', 5000));

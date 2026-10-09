@@ -185,3 +185,23 @@ it('survives garbage in the cache', function () {
 it('reads from the array store like any other', function () {
     expect(Cache::getStore())->toBeInstanceOf(ArrayStore::class);
 });
+
+it('knows whether the store keeps items between processes', function (?string $store, bool $persistent) {
+    config()->set('cache.stores.files', ['driver' => 'file', 'path' => sys_get_temp_dir()]);
+    config()->set('cache.stores.nothing', ['driver' => 'null']);
+    config()->set('sidetower.buffer.store', $store);
+
+    expect(app(Buffer::class)->persistent())->toBe($persistent);
+})->with([
+    'the default store in tests is array' => [null, false],
+    'array' => ['array', false],
+    'null' => ['nothing', false],
+    'file' => ['files', true],
+]);
+
+it('follows the default cache store when no store is named', function () {
+    config()->set('cache.stores.files', ['driver' => 'file', 'path' => sys_get_temp_dir()]);
+    config()->set('cache.default', 'files');
+
+    expect(app(Buffer::class)->persistent())->toBeTrue();
+});

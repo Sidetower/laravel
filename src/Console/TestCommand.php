@@ -26,6 +26,10 @@ class TestCommand extends Command
             return self::FAILURE;
         }
 
+        if (! $buffer->persistent()) {
+            $this->components->warn('The cache store of the buffer does not keep items between processes (array or null). Items recorded by web requests never reach the scheduled command. Set SIDETOWER_CACHE_STORE to a shared store such as redis, database or file.');
+        }
+
         $id = $sidetower->newId();
 
         $this->components->info(sprintf("Sending a check-in to %s as environment '%s'.", config('sidetower.endpoint'), $sidetower->environment()));

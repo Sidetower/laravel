@@ -160,3 +160,24 @@ it('sends with the key as bearer token to the endpoint', function () {
     Http::assertSent(fn (Request $request) => $request->url() === 'https://sidetower.test/v1/ingest'
         && $request->header('Authorization') === ['Bearer sk_test0000000000000000000000000000']);
 });
+
+it('says the check-in was accepted when the server first found the batch too large and then took its halves', function () {
+    fakeServer(Http::sequence()
+        ->push(['error' => 'payload_too_large', 'message' => 'x'], 413)
+        ->push(['accepted' => 2, 'rejected' => []], 202)
+        ->push(['accepted' => 1, 'rejected' => []], 202));
+    fillBuffer(3);
+
+    [$code, $output] = runSidetowerTest();
+
+    expect($code)->toBe(0)
+        ->and($output)->toContain('Accepted');
+});
+
+it('warns when the buffer is in a store that forgets between processes', function () {
+    fakeServer();
+
+    [, $output] = runSidetowerTest();
+
+    expect($output)->toContain('does not keep items between processes');
+});
