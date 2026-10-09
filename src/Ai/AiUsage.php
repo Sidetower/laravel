@@ -5,12 +5,16 @@ declare(strict_types=1);
 namespace Sidetower\Laravel\Ai;
 
 use Closure;
+use Illuminate\Contracts\Foundation\Application;
 use Sidetower\Laravel\Sidetower;
 use Throwable;
 
 /**
  * AI usage: operation scopes and explicit records. Calls that go through Laravel's Http client are captured on their own
  * (HttpCapture); everything captured here carries the operation name and attributes of the scope it was made in.
+ *
+ * The `Sidetower` instance is looked up when an item is recorded, not when this class is made, so a replaced instance
+ * (a test double bound in the container) receives the items.
  */
 class AiUsage
 {
@@ -25,7 +29,7 @@ class AiUsage
     protected int $lastScope = 0;
 
     public function __construct(
-        protected Sidetower $sidetower,
+        protected Application $app,
         protected OperationResolver $defaults,
     ) {}
 
@@ -64,7 +68,7 @@ class AiUsage
             $usage['operation'] = filled($usage['operation'] ?? null) ? $usage['operation'] : $this->currentOperation();
             $usage['attributes'] = $this->merge($this->currentAttributes(), is_array($usage['attributes'] ?? null) ? $usage['attributes'] : []);
 
-            $this->sidetower->record(UsageItem::make($usage));
+            $this->app->make(Sidetower::class)->record(UsageItem::make($usage));
         } catch (Throwable $e) {
             Debug::caught($e);
         }

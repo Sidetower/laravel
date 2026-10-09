@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sidetower\Laravel\Ai\Http;
 
+use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Events\ConnectionFailed;
 use Illuminate\Http\Client\Events\ResponseReceived;
@@ -26,7 +27,7 @@ use Throwable;
 class HttpCapture
 {
     public function __construct(
-        protected Sidetower $sidetower,
+        protected Application $app,
         protected AiUsage $usage,
         protected ProviderRegistry $providers,
     ) {}
@@ -50,7 +51,7 @@ class HttpCapture
 
             $provider = $this->providers->providerFor(strtolower($request->toPsrRequest()->getUri()->getHost()));
 
-            if ($provider === null || ! $this->sidetower->enabled()) {
+            if ($provider === null || ! $this->app->make(Sidetower::class)->enabled()) {
                 return;
             }
 

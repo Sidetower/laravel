@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Log;
 use Sidetower\Laravel\Ai\Http\BodyState;
 use Sidetower\Laravel\Ai\Http\HttpExchange;
 use Sidetower\Laravel\Ai\Http\ProviderRegistry;
+use Sidetower\Laravel\Facades\Sidetower;
 use Sidetower\Laravel\Tests\Ai\AiTestHelpers;
 
 beforeEach(fn () => Http::preventStrayRequests());
@@ -332,4 +333,29 @@ it('still records buffered streams and failures when ai.streams is off', functio
 
     expect(array_column(AiTestHelpers::items(), 'status'))->toBe(['ok', 'error'])
         ->and(AiTestHelpers::items()[0])->toMatchArray(['inputTokens' => 5, 'outputTokens' => 6]);
+});
+
+it('hands items to the Sidetower instance bound at the time, so a test double receives them', function () {
+    $received = [];
+    $double = new class(app(), $received) extends \Sidetower\Laravel\Sidetower
+    {
+        public function __construct($app, public array &$items)
+        {
+            parent::__construct($app);
+        }
+
+        public function record(array $item): void
+        {
+            $this->items[] = $item;
+        }
+    };
+    Sidetower::ai();
+    app()->instance(\Sidetower\Laravel\Sidetower::class, $double);
+    Http::fake(['api.openai.com/*' => Http::response(['model' => 'm', 'usage' => ['prompt_tokens' => 5]])]);
+
+    Http::post('https://api.openai.com/v1/chat/completions', ['model' => 'm']);
+    Sidetower::ai()->record(['provider' => 'p', 'model' => 'm']);
+
+    expect($received)->toHaveCount(2)
+        ->and(array_column($received, 'provider'))->toBe(['openai', 'p']);
 });
