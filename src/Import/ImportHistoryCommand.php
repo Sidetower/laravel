@@ -20,6 +20,7 @@ class ImportHistoryCommand extends Command
 {
     protected $signature = 'sidetower:import-history
         {--since= : Import usage from this date on (default: 400 days ago, the oldest the server takes)}
+        {--until= : Import usage before this date only, such as the moment the SDK was installed, so calls it already reported live are not imported again}
         {--dry-run : Send nothing: count the items of every source and show the first}';
 
     protected $description = 'Send the AI usage stored before the SDK was installed to Sidetower, once';
@@ -35,6 +36,18 @@ class ImportHistoryCommand extends Command
         $dryRun = (bool) $this->option('dry-run');
 
         if (($since = $this->since()) === null) {
+            return self::FAILURE;
+        }
+
+        $until = $this->until();
+
+        if ($until === false) {
+            return self::FAILURE;
+        }
+
+        if ($until !== null && $until->lessThanOrEqualTo($since)) {
+            $this->error('--until must be later than --since.');
+
             return self::FAILURE;
         }
 
@@ -54,12 +67,13 @@ class ImportHistoryCommand extends Command
             return self::FAILURE;
         }
 
-        $this->line(($dryRun ? 'Dry run, nothing is sent. ' : '').'Importing usage since '.$since->toDateTimeString().'.');
+        $this->line(($dryRun ? 'Dry run, nothing is sent. ' : '').'Importing usage since '.$since->toDateTimeString()
+            .($until !== null ? ', before '.$until->toDateTimeString() : '').'.');
 
         $failed = false;
 
         foreach ($sources as $source) {
-            $failed = ! $this->importSource($source, $since, $client, $dryRun);
+            $failed = ! $this->importSource($source, $since, $until, $client, $dryRun);
 
             if ($failed) {
                 break;
@@ -83,6 +97,26 @@ class ImportHistoryCommand extends Command
             $this->error("--since={$since} is not a date.");
 
             return null;
+        }
+    }
+
+    /**
+     * Null without `--until`, false when it is not a date.
+     */
+    protected function until(): CarbonInterface|false|null
+    {
+        $until = $this->option('until');
+
+        if (! is_string($until) || $until === '') {
+            return null;
+        }
+
+        try {
+            return Carbon::parse($until);
+        } catch (Throwable) {
+            $this->error("--until={$until} is not a date.");
+
+            return false;
         }
     }
 
@@ -142,10 +176,10 @@ class ImportHistoryCommand extends Command
     /**
      * Reads one source and sends it. False when the import has to stop.
      */
-    protected function importSource(HistorySource $source, CarbonInterface $since, ImportClient $client, bool $dryRun): bool
+    protected function importSource(HistorySource $source, CarbonInterface $since, ?CarbonInterface $until, ImportClient $client, bool $dryRun): bool
     {
         $name = $source->name();
-        $counts = ['read' => 0, 'skipped' => 0, 'batches' => 0, 'accepted' => 0];
+        $counts = ['read' => 0, 'skipped' => 0, 'later' => 0, 'batches' => 0, 'accepted' => 0];
         $rejected = [];
         $first = null;
         $batch = [];
@@ -181,6 +215,12 @@ class ImportHistoryCommand extends Command
 
                 if ($item === null || $size > self::ITEM_BYTES) {
                     $counts['skipped']++;
+
+                    continue;
+                }
+
+                if ($until !== null && Carbon::parse($item['ts'])->greaterThanOrEqualTo($until)) {
+                    $counts['later']++;
 
                     continue;
                 }
@@ -232,13 +272,14 @@ class ImportHistoryCommand extends Command
     }
 
     /**
-     * @param  array{read: int, skipped: int, batches: int, accepted: int}  $counts
+     * @param  array{read: int, skipped: int, later: int, batches: int, accepted: int}  $counts
      * @param  array<string, int>  $rejected
      * @param  array<string, mixed>|null  $first
      */
     protected function report(string $name, array $counts, array $rejected, ?array $first, bool $dryRun): void
     {
-        $skipped = $counts['skipped'] > 0 ? ", skipped {$counts['skipped']} without a valid id or time" : '';
+        $skipped = ($counts['skipped'] > 0 ? ", skipped {$counts['skipped']} without a valid id or time" : '')
+            .($counts['later'] > 0 ? ", left out {$counts['later']} from --until on" : '');
 
         if ($dryRun) {
             $batches = (int) ceil($counts['read'] / self::BATCH_ITEMS);

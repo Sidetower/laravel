@@ -226,7 +226,7 @@ php artisan sidetower:import-history --dry-run
 php artisan sidetower:import-history
 ```
 
-`--dry-run` sends nothing: it counts the items of every source and shows the first one, so you can check the mapping. `--since=2026-01-01` (any date Carbon reads, such as `"90 days ago"`) limits the import; the default is 400 days back.
+`--dry-run` sends nothing: it counts the items of every source and shows the first one, so you can check the mapping. `--since=2026-01-01` (any date Carbon reads, such as `"90 days ago"`) limits the import; the default is 400 days back. `--until` leaves out the items from that moment on: set it to when the SDK started reporting (the first deploy with a key), so calls it already sent live are not imported again under their history ids.
 
 ```
 Importing usage since 2025-09-04 18:00:00.

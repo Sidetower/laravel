@@ -249,6 +249,38 @@ it('accepts a relative date for --since', function () {
     expect($source->askedSince->toDateString())->toBe('2026-09-09');
 });
 
+it('leaves out the items from --until on and says how many', function () {
+    $source = ArrayHistorySource::register('s', [
+        ...historyItems(2, 'before'),
+        ...historyItems(3, 'after', ['ts' => '2026-10-01 12:00:00']),
+        ...historyItems(1, 'edge', ['ts' => '2026-10-01 09:00:00']),
+    ]);
+    acceptEverything();
+
+    $this->artisan('sidetower:import-history', ['--since' => '2026-08-01', '--until' => '2026-10-01 09:00:00'])
+        ->expectsOutputToContain('Importing usage since 2026-08-01 00:00:00, before 2026-10-01 09:00:00.')
+        ->expectsOutputToContain('s: sent 2 in 1 batches, accepted 2, rejected 0, left out 4 from --until on.')
+        ->assertExitCode(0);
+
+    expect(collect(sentBatches()[0]['items'])->pluck('id')->all())->toBe(['hist-before-t-1', 'hist-before-t-2'])
+        ->and($source->askedSince->toDateString())->toBe('2026-08-01');
+});
+
+it('refuses an --until that is not a date, or not after --since', function () {
+    ArrayHistorySource::register('s', historyItems(1));
+    Http::fake();
+
+    $this->artisan('sidetower:import-history', ['--until' => 'soonish'])
+        ->expectsOutputToContain('--until=soonish is not a date.')
+        ->assertExitCode(1);
+
+    $this->artisan('sidetower:import-history', ['--since' => '2026-09-01', '--until' => '2026-09-01'])
+        ->expectsOutputToContain('--until must be later than --since.')
+        ->assertExitCode(1);
+
+    Http::assertNothingSent();
+});
+
 it('refuses a --since that is not a date', function () {
     ArrayHistorySource::register('s', historyItems(1));
     Http::fake();

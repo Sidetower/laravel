@@ -82,7 +82,8 @@ class SidetowerServiceProvider extends ServiceProvider
 
     /**
      * `sidetower:send` once a minute. Not `onOneServer`: every server sends its own health (the buffer's lock keeps them from
-     * trampling each other). The mutex expires after 10 minutes, so a killed run does not stop sending for a day.
+     * trampling each other). The mutex expires after 10 minutes, so a killed run does not stop sending for a day. It also runs
+     * in maintenance mode: the scheduler is alive during a deploy, and a pause there would read as a stopped scheduler.
      */
     protected function scheduleSending(): void
     {
@@ -90,6 +91,7 @@ class SidetowerServiceProvider extends ServiceProvider
             $schedule->command('sidetower:send')
                 ->everyMinute()
                 ->withoutOverlapping(10)
+                ->evenInMaintenanceMode()
                 ->when(fn (): bool => app(Sidetower::class)->enabled());
         });
     }

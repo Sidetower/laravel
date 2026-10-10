@@ -33,6 +33,11 @@ describe('the schedule', function () {
             ->and($event->runInBackground)->toBeFalse();
     });
 
+    it('keeps running in maintenance mode, so a deploy does not read as a stopped scheduler', function () {
+        expect(sdkSendEvent()->evenInMaintenanceMode)->toBeTrue()
+            ->and(sdkSendEvent()->runsInMaintenanceMode())->toBeTrue();
+    });
+
     it('lets a killed run go after ten minutes', function () {
         expect(sdkSendEvent()->expiresAt)->toBe(10);
     });
