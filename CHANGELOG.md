@@ -27,4 +27,4 @@ First release.
 - Environment names are lower-cased and checked against the protocol; an invalid one switches the SDK off with one warning.
 - Conformance tests against copies of the protocol's JSON Schema and fixtures (`tests/Protocol`), refreshed with
   `composer protocol:sync -- <path to packages/protocol>`.
-- AI usage capture and the history import, `sidetower:import-history` with `--since`, `--until` and `--dry-run` (see `docs/ai.md`).
+- AI usage capture (OpenAI-compatible providers, Anthropic, Gemini incl. the Interactions API, fal, ElevenLabs) and the history import, `sidetower:import-history` with `--since`, `--until` and `--dry-run` (see `docs/ai.md`).

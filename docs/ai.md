@@ -23,7 +23,7 @@ The SDK listens to the Http client's `ResponseReceived` and `ConnectionFailed` e
 | `api.openai.com` | `openai` | Chat Completions, Responses, Embeddings | `usage` |
 | `openrouter.ai` | `openrouter` | the same | `usage`, and `usage.cost` as the reported cost |
 | `api.anthropic.com` | `anthropic` | Messages | `usage`, including cache reads and writes |
-| `generativelanguage.googleapis.com` | `google` | `generateContent`, `streamGenerateContent` | `usageMetadata` |
+| `generativelanguage.googleapis.com` | `google` | `generateContent`, `streamGenerateContent`, and the Interactions API (`/v1beta/interactions`, used by laravel/ai's Gemini driver) | `usageMetadata`, or the interaction's `usage` |
 | `api.mistral.ai` | `mistral` | Chat, Embeddings | `usage` (OpenAI format) |
 | `api.groq.com` | `groq` | Chat, Responses | `usage` (OpenAI format) |
 | `api.deepseek.com` | `deepseek` | Chat | `usage` (OpenAI format, `prompt_cache_hit_tokens`) |
@@ -39,7 +39,7 @@ Other endpoints of these hosts (model lists, files, token counting, batches, Gem
 
 **Duration.** `durationMs` comes from Guzzle's transfer statistics when the client has them.
 
-**fal.** One generation takes several requests on the queue: submit, status polls, result. Only the answer that carries the result is counted: the synchronous `fal.run/<endpoint>` answer or the queue's `.../requests/<id>` result. A submit is ignored, unless it failed, which is recorded as an error because no result will follow. `units` is the number of images (`unitType: image`) or `1` (`unitType: request`).
+**fal.** One generation takes several requests on the queue: submit, status polls, result. Only the answer that carries the result is counted: the synchronous `fal.run/<endpoint>` answer or the queue's `.../requests/<id>` result. A submit is ignored, unless it failed, which is recorded as an error because no result will follow. `units` is the number of images (`unitType: image`) or `1` (`unitType: request`). The model is the endpoint of the submit, remembered in the same process; a result fetched in another process (a webhook, a queued job) names only the base endpoint, and every fetch of the same result counts again. An application that works that way should switch the fal hosts off (`'hosts' => ['fal.run' => null, 'queue.fal.run' => null]`) and record from its own rows (see [Manual records](#manual-records)).
 
 **ElevenLabs.** The answer is audio, which is never read. `units` is the number of characters of the request's `text` (of every `inputs[].text` for a dialogue), or the `character-cost` header of the response when it has one; `unitType` is `character`. The model is the request's `model_id` (`eleven_multilingual_v2`, ElevenLabs' default, when absent).
 

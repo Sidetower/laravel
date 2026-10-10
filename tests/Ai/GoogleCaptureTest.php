@@ -132,3 +132,55 @@ it('does not count embedding calls, for which Gemini reports no usage', function
 
     expect(AiTestHelpers::items())->toBe([]);
 });
+
+it('records a call to the Interactions API, the way laravel/ai\'s Gemini driver makes it', function () {
+    Http::fake(['generativelanguage.googleapis.com/*' => Http::response([
+        'id' => 'v1_abc',
+        'model' => 'gemini-3-flash-preview',
+        'status' => 'completed',
+        'outputs' => [['type' => 'text', 'text' => 'A private answer']],
+        'usage' => [
+            'total_input_tokens' => 1000,
+            'total_cached_tokens' => 600,
+            'total_output_tokens' => 200,
+            'total_thought_tokens' => 300,
+            'total_tokens' => 1500,
+        ],
+    ])]);
+
+    Http::withHeaders(['x-goog-api-key' => 'AIza-secret-key'])
+        ->post('https://generativelanguage.googleapis.com/v1beta/interactions', ['model' => 'gemini-3-flash-preview', 'input' => 'Private prompt', 'store' => false]);
+
+    expect(AiTestHelpers::only())->toBe([
+        'type' => 'ai.usage',
+        'operation' => 'unknown',
+        'provider' => 'google',
+        'model' => 'gemini-3-flash-preview',
+        'status' => 'ok',
+        'inputTokens' => 400,
+        'outputTokens' => 500,
+        'cacheReadTokens' => 600,
+    ]);
+
+    expect(json_encode(AiTestHelpers::items()))->not->toContain('Private')->not->toContain('AIza');
+});
+
+it('takes an interaction\'s model from the request when the response does not name one', function () {
+    Http::fake(['generativelanguage.googleapis.com/*' => Http::response(['id' => 'v1_abc', 'usage' => ['total_input_tokens' => 12, 'total_output_tokens' => 3]])]);
+
+    Http::post('https://generativelanguage.googleapis.com/v1beta/interactions', ['model' => 'gemini-2.5-flash', 'input' => 'hi']);
+
+    expect(AiTestHelpers::only())->toEqual([
+        'type' => 'ai.usage', 'operation' => 'unknown', 'provider' => 'google', 'model' => 'gemini-2.5-flash', 'status' => 'ok',
+        'inputTokens' => 12, 'outputTokens' => 3,
+    ]);
+});
+
+it('records a failed interaction as an error without tokens', function () {
+    Http::fake(['generativelanguage.googleapis.com/*' => Http::response(['error' => ['code' => 429, 'message' => 'Resource exhausted', 'status' => 'RESOURCE_EXHAUSTED']], 429)]);
+
+    Http::post('https://generativelanguage.googleapis.com/v1beta/interactions', ['model' => 'gemini-2.5-flash', 'input' => 'hi']);
+
+    expect(AiTestHelpers::only())->toMatchArray(['provider' => 'google', 'model' => 'gemini-2.5-flash', 'status' => 'error'])
+        ->not->toHaveKey('inputTokens');
+});
